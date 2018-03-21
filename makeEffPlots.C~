@@ -1,0 +1,157 @@
+#include <fstream>
+#include <vector>
+void makeEffPlots(int dataMC){
+  gStyle->SetOptStat(0);
+  gStyle->SetLegendBorderSize(0);
+
+  if(dataMC == 0)
+    {
+      TFile* fTPC = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_17g6a3_pthat2_clusterv2_small.root","READ");
+      TFile* fITS = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_17g6a3_pthat2_clusterv2_small.root","READ");
+      
+      if(!fTPC->IsOpen())
+	{
+	  cout << "cannot find the TPC+ITS file" << endl;
+	  return;
+	}
+      if(!fITS->IsOpen())
+	{
+	  cout << "cannot find the ITS only file" << endl;
+      return;
+	}
+      
+      TH1F* hTrueEta_TPC = (TH1F*)fTPC->Get("hTrue_eta");
+      TH1F* hRecoEta_TPC = (TH1F*)fTPC->Get("hReco_eta");
+      TH1F* hTrueEta_ITS = (TH1F*)fITS->Get("hTrue_eta");
+      TH1F* hRecoEta_ITS = (TH1F*)fITS->Get("hReco_eta");
+      
+      
+      TH1F* hEtaEff_TPC = (TH1F*)hRecoEta_TPC->Clone("hEtaEff_TPC");
+      hEtaEff_TPC->Divide(hTrueEta_TPC);
+      
+      TH1F* hEtaEff_ITS = (TH1F*)hRecoEta_ITS->Clone("hEtaEff_ITS");
+      hEtaEff_ITS->Divide(hTrueEta_ITS);
+      
+      hEtaEff_TPC->SetTitle(";#eta^{true};#epsilon");
+      hEtaEff_ITS->SetTitle(";#eta^{true};#epsilon");
+      hEtaEff_TPC->SetLineColor(kRed);
+      hEtaEff_ITS->SetLineColor(kBlack);
+      
+      TLegend* leg = new TLegend(0.7,0.15,0.85,0.3);
+      leg->SetHeader("p_{T} > 1.0 GeV/c");
+      leg->AddEntry(hEtaEff_TPC,"TPC+ITS");
+      leg->AddEntry(hEtaEff_ITS,"ITS only"); 
+      
+      TCanvas* c1 = new TCanvas("c1","c1",800,600);
+      hEtaEff_ITS->Draw();
+      hEtaEff_TPC->Draw("same");
+      leg->Draw("same");
+      
+      TGraphAsymmErrors* eff_TPC = (TGraphAsymmErrors*)fTPC->Get("Efficiency");
+      TGraphAsymmErrors* eff_ITS = (TGraphAsymmErrors*)fITS->Get("Efficiency");
+      eff_TPC->SetLineColor(kRed);
+      eff_ITS->SetLineColor(kBlack);
+      
+      TLegend* leg2 = new TLegend(0.75,0.15,0.85,0.25);
+      leg2->AddEntry(eff_TPC,"TPC+ITS");
+      leg2->AddEntry(eff_ITS,"ITS only"); 
+      
+      TCanvas* c2 = new TCanvas("c2", "c2", 800, 600);
+      eff_ITS->Draw("AP");
+      eff_TPC->Draw("PSAME");
+      leg2->Draw("same");
+    }
+  
+  //////////////////////////////////////////DATA////////////////////////////////////
+  if(dataMC == 1)
+    {
+      TFile* fTPC = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13c_pass4_v2.root","READ");
+      TFile* fITS = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13c_pass4_v2.root","READ");
+      
+      if(!fTPC->IsOpen())
+	{
+	  cout << "cannot find the TPC+ITS file" << endl;
+	  return;
+	}
+      if(!fITS->IsOpen())
+	{
+	  cout << "cannot find the ITS only file" << endl;
+	  return;
+	}
+      
+      TH1F* hTrack_TPC = (TH1F*)fTPC->Get("track_pt");
+      TH1F* hTrack_ITS = (TH1F*)fITS->Get("track_pt");
+      hTrack_TPC->SetTitle(";p_{T} (GeV/c);1/N_{evn} dn^{2}/dp_{T}d#eta");
+      hTrack_ITS->SetTitle(";p_{T} (GeV/c);1/N_{evn} dn^{2}/dp_{T}d#eta");
+      hTrack_TPC->SetLineColor(kRed);
+      hTrack_ITS->SetLineColor(kBlack);
+      hTrack_TPC->SetMarkerColor(kRed);
+      hTrack_ITS->SetMarkerColor(kBlack);
+      hTrack_TPC->SetMarkerStyle(8);
+      hTrack_ITS->SetMarkerStyle(8);
+      
+      vector <double> x;
+      vector <double> y;
+      
+      double x_n, y_n;
+      ifstream inFile;
+      inFile.open("pt_spectra.csv");
+      if(!inFile.is_open()){cout << "csv file not open. Try again." << endl; return;}
+      while(!inFile.eof())
+	{
+	  inFile >> x_n >> y_n;
+	  x.push_back(x_n);
+	  y.push_back(y_n);
+	}
+      inFile.close();
+      
+      TH1F* hTrack_data = (TH1F*)hTrack_TPC->Clone("hTrack_data");
+      hTrack_data->Reset("C");
+      hTrack_data->SetTitle(";p_{T} (GeV/c);1/N_{evn} dn^{2}/dp_{T}d#eta");
+      hTrack_data->SetLineColor(kBlue);
+      hTrack_data->SetMarkerColor(kBlue);
+      hTrack_data->SetMarkerStyle(8);
+      for(int i = 0; i < x.size();i++)
+	{
+	  hTrack_data->Fill(x[i], y[i]);
+	}
+      
+      
+      TLegend* leg2 = new TLegend(0.75,0.15,0.85,0.25);
+      leg2->AddEntry(hTrack_TPC,"TPC+ITS");
+      leg2->AddEntry(hTrack_ITS,"ITS only"); 
+      leg2->AddEntry(hTrack_data, "Data");
+      
+      TCanvas* c3 = new TCanvas("c3", "c3", 800, 600);
+      c3->SetLogy();
+      c3->SetLogx();
+      hTrack_ITS->Draw("P");
+      hTrack_data->Draw("PHISTSAME");
+      hTrack_TPC->Draw("PSAME");
+      leg2->Draw("same");
+      
+      TCanvas* c2 = new TCanvas("c2","c2", 800, 600);
+      //c3->SetLogy();
+      c2->SetLogx();
+      TLegend* leg3 = new TLegend(0.75,0.15,0.85,0.25);
+      TH1F* hTrack_TPC2 = (TH1F*)hTrack_TPC->Clone("hTrack_TPC2");
+      TH1F* hTrack_ITS2 = (TH1F*)hTrack_ITS->Clone("hTrack_ITS2");
+      hTrack_TPC2->Divide(hTrack_data);
+      hTrack_ITS2->Divide(hTrack_data);
+      hTrack_TPC2->SetMaximum(2);
+      hTrack_ITS2->SetMaximum(2);
+      hTrack_TPC2->SetTitle(";p_{T} (GeV/c);Ratio");
+      hTrack_ITS2->SetTitle(";p_{T} (GeV/c);Ratio");
+      hTrack_ITS2->Draw("P HIST SAME");
+      hTrack_TPC2->Draw("P HIST SAME");
+      //TLine *line = new TLine(-3,ymax,3,ymax);
+      //line->SetLineColor(kBlue);
+      //line->Draw("SAME");
+      leg3->AddEntry(hTrack_TPC2,"TPC+ITS/Data");
+      leg3->AddEntry(hTrack_ITS2,"ITS only/Data"); 
+      leg3->Draw();
+    }
+
+
+
+}
