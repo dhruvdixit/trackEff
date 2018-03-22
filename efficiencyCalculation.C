@@ -22,19 +22,24 @@
 #include <algorithm>
 #include <iostream>
 
-void Run(const int TrackBit, char* filename){
+void Run(const int TrackBit, char* filename, bool isMC){
   //SetAtlasStyle();
+  TFile* f;
+  if(isMC)
+    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/MC/%s.root",filename),"READ");
+  else
+    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/pPb/13c/%s.root",filename),"READ");
   
-  auto f = TFile::Open(Form("/project/projectdirs/alice/NTuples/pPb/13c/%s.root",filename),"READ");
-  
-  //auto f = TFile::Open(Form("/project/projectdirs/alice/NTuples/MC/%s.root",filename),"READ");
   cout << filename << endl;
   if(!f){
       printf("Error: cannot open ntuple.root");
       return;
   }
-  //TTree* tree = (TTree*)f->Get("_tree_event");
-  TTree* tree = (TTree*)f->Get("AliAnalysisTaskNTGJ/_tree_event");
+  TTree* tree;
+  if(isMC)
+    tree = (TTree*)f->Get("_tree_event");
+  else
+    tree = (TTree*)f->Get("AliAnalysisTaskNTGJ/_tree_event");
   if(!tree){ printf("Error: cannot find tree"); }
   const Int_t kMax = 5000;
   unsigned int ntrack;
@@ -95,12 +100,19 @@ void Run(const int TrackBit, char* filename){
     5.256,   5.918,   6.663,   7.501,   8.445,   9.508,   10.705,  12.052,  13.569,  15.277,
     17.2,    19.365,  21.802,  24.546,  27.636,  31.114,  35.03,   39.439,  44.403,  49.992};//*/
 
-  const Double_t bins_track[47] = {
+  /*const Double_t bins_track[47] = {
     0.2,   0.25,   0.3,   0.35,   0.4,    0.45,   0.5,    0.55,   0.6,   0.65,   
     0.7,   0.75,   0.8,   0.85,   0.9,    0.95,   1.01,   1.1,   1.2,    1.3,   
     1.4,   1.5,    1.6,   1.7,    1.8,    1.9,    2.0,    2.2,   2.4,    2.6,   
     2.8,   3.0,    3.2,   3.4,    3.6,    3.8,    4.07,   4.5,   5.0,    5.5,
-    6.0,   6.5,    7.12,  8.0,    9.0,    10.0,   11.0};//*/
+    6.0,   6.5,    7.12,  8.0,    9.0,    10.0,   11.0};//my binning*/
+
+  const Double_t bins_track[49] = {
+    0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
+    0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20,
+    1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40,
+    2.60, 2.80, 3.00, 3.20, 3.40, 3.60, 3.80, 4.00, 4.50, 5.00,
+    5.50, 6.00, 6.50, 7.00, 8.00, 9.00, 10.00,11.00,12.00};//*/
 
   const int nbinseta = 10;
   Double_t etabins[nbinseta+1] = {};
@@ -122,11 +134,12 @@ void Run(const int TrackBit, char* filename){
 
   auto hCorrelation   = new TH2F("hCorrelation", "", 80, 0, 10.0, 80, 0, 10.0);
   auto hRes_Pt   = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
-  auto hDen  = new TH1F("hDen", "", 46, bins_track);
-  auto hNum  = new TH1F("hNum","", 46, bins_track);
-  auto hNum2  = new TH1F("hNum2","", 46, bins_track);
-  auto hFake = new TH1F("hFake", "", 46, bins_track);
-  auto hReco = new TH1F("hReco","", 46,bins_track);
+  auto hDen  = new TH1F("hDen", "", 48, bins_track);
+  auto hNum  = new TH1F("hNum","", 48, bins_track);
+  auto hNum2  = new TH1F("hNum2","", 48, bins_track);
+  auto hFake = new TH1F("hFake", "", 48, bins_track);
+  auto hReco = new TH1F("hReco","", 48,bins_track);
+  auto hTrack_pt = new TH1F("hTrack_pt","", 48, bins_track);
   auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, 9, bins);
   auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, 9, bins);
   auto hNum2Dphi = new TH2F("hNum2Dphi","", nbinsphi, phibins, 9, bins);
@@ -161,11 +174,7 @@ void Run(const int TrackBit, char* filename){
   auto hTrue_eta  = new TH1F("hTrue_eta", "", 20, -1.0, 1.0);
   auto hReco_eta  = new TH1F("hReco_eta","", 20, -1.0, 1.0);
 
-  auto hTrack_pt = new TH1F("hTrack_pt","", 46, bins_track);
-  hTrack_pt->SetTitle(";p_{T} GeV/c;dn/dp_{T}");
-
   //auto hEventSelection = new TH1F("hEventSelection", "", 10, -0.5, 9.5);
-
    
   hFake->Sumw2();  
   hDen->Sumw2();
@@ -179,7 +188,7 @@ void Run(const int TrackBit, char* filename){
   const bool doCutDCA = false; 
   const bool doCutChi2 = false;
 
-  Long64_t numEntries = tree->GetEntries ();
+  Long64_t numEntries = 10000;//tree->GetEntries ();
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
@@ -190,26 +199,26 @@ void Run(const int TrackBit, char* filename){
     for (int n = 0;  n< ntrack; n++){
       
       if((track_quality[n]&TrackBit)==0) continue;
-      if(TMath::Abs(track_eta[n])> maxEta) continue;
-      if(track_its_chi_square[n]>10.0) continue;
-      if(TrackBit == 16)
-	if(track_its_ncluster[n] < 5) continue;
+      //if(TMath::Abs(track_eta[n])> maxEta) continue;
+      //if(track_its_chi_square[n]>10.0) continue;
+      //if(TrackBit == 16)
+      //if(track_its_ncluster[n] < 5) continue;
       double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
-      if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
+      //if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
       hTrack_pt->Fill(track_pt[n]);
       if (eventChange) {numEvents++; eventChange = false;}
       
 
       unsigned short index = track_mc_truth_index[n];
       if(index>65534) continue; //particles not associated with MC particle (i.e, secondaries or fakes)
-      if(TMath::Abs(mc_truth_pdg_code[index])!=211) continue;
+      if((TMath::Abs(mc_truth_pdg_code[index])!=211) && (TMath::Abs(mc_truth_pdg_code[index])!=321) && (TMath::Abs(mc_truth_pdg_code[index])!=2212)) continue;
       
       hCorrelation->Fill(mc_truth_pt[index], track_pt[n]);
       hRes_Pt->Fill(mc_truth_pt[index], 100*(track_pt[n]-mc_truth_pt[index])/(mc_truth_pt[index]));
       
       hNum->Fill(mc_truth_pt[index]);
       hNum2->Fill(track_pt[n]);
-      //cout << track_pt[n] << "\t" << mc_truth_pt[index]
+      //cout << track_pt[n] << "\t" << mc_truth_pt[index] << endl;
       if(mc_truth_pt[index]>1.0)       
 	  hReco_eta->Fill(mc_truth_eta[index]);
       hNum2Deta->Fill(mc_truth_eta[index], mc_truth_pt[index]);
@@ -224,9 +233,9 @@ void Run(const int TrackBit, char* filename){
     //Loop over MC particles (all are primaries), pick charged ones with |eta|<0.8
     for (int n = 0;  n< nmc_truth; n++){
         int pdgcode = mc_truth_pdg_code[n];
-        if(TMath::Abs(mc_truth_pdg_code[n])!=211) continue;
+        if((TMath::Abs(mc_truth_pdg_code[n])!=211) && (TMath::Abs(mc_truth_pdg_code[n])!=321) && (TMath::Abs(mc_truth_pdg_code[n])!=2212)) continue;
         if(int(mc_truth_charge[n])==0) continue;
-        if(TMath::Abs(mc_truth_eta[n])> maxEta) continue; //skip particles with |eta|<0.8
+        //if(TMath::Abs(mc_truth_eta[n])> maxEta) continue; //skip particles with |eta|>0.8
         hDen->Fill(mc_truth_pt[n]);
 	if(mc_truth_pt[n] > 1.0)
 	  hTrue_eta->Fill(mc_truth_eta[n]);
@@ -237,12 +246,12 @@ void Run(const int TrackBit, char* filename){
     
      for (int n=0; n< ntrack; n++){ 
          if((track_quality[n]&TrackBit)==0) continue;
-	 if(doCutChi2 && track_its_chi_square[n]>10) continue;
-         if(TMath::Abs(track_eta[n])> maxEta) continue;
+	 //if(doCutChi2 && track_its_chi_square[n]>10) continue;
+         //if(TMath::Abs(track_eta[n])> maxEta) continue;
 	 double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
-	 if(doCutDCA && TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
+	 //if(doCutDCA && TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
          double chi2 = track_its_chi_square[n];
-	 if(chi2>10.0) chi2=10.0;
+	 //if(chi2>10.0) chi2=10.0;
          hReco->Fill(track_pt[n]);
          
          if(track_pt[n]>1.0){
@@ -310,7 +319,7 @@ void Run(const int TrackBit, char* filename){
 
    cout << numEvents << endl;
    const double tot_eta = 1.6;
-   for(int i = 0; i < hTrack_pt->GetNbinsX(); i++)
+   for(int i = 1; i < hTrack_pt->GetNbinsX(); i++)
      {
        double dpt = hTrack_pt->GetBinWidth(i);
 
@@ -401,7 +410,8 @@ void Run(const int TrackBit, char* filename){
 
    hTrue_eta->Write("hTrue_eta");
    hReco_eta->Write("hReco_eta");
-
+   
+   hTrack_pt->SetTitle(";p_{T} GeV/c;dn/dp_{T}");
    hTrack_pt->Write("track_pt");
    //TH1 eta_eff= new TGraphAsymmErrors(hReco_eta, hTrue_eta);
    //eta_eff->SetTitle("; #eta^{true} ; #epsilon");
@@ -540,11 +550,11 @@ void efficiencyCalculation(){
   //Run(3, "17g8a_woSDD");
   //Run(16, "17g8a_woSDD");
   
-  //Run(3, "17g6a3_pthat2_clusterv2_small");
-  //Run(16, "17g6a3_pthat2_clusterv2_small");
+  Run(3, "17g6a3_pthat2_clusterv2_small", true);
+  Run(16, "17g6a3_pthat2_clusterv2_small", true);
   
-  Run(3, "13c_pass4_v2");
-  Run(16, "13c_pass4_v2");
+  Run(3, "13c_pass4_v2", false);
+  Run(16, "13c_pass4_v2", false);
   return;
 }
 
