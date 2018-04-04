@@ -22,15 +22,17 @@
 #include <algorithm>
 #include <iostream>
 
-void Run(const int TrackBit, char* filename, bool isMC){
+void Run(const int TrackBit, TString filename, bool isMC){
   //SetAtlasStyle();
   TFile* f;
   if(isMC)
-    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/MC/%s.root",filename),"READ");
+    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/MC/%s.root",filename.Data()),"READ");
   else
-    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/pPb/13c/%s.root",filename),"READ");
-  
-  cout << filename << endl;
+    {
+      TString period = filename(0,3);
+      f = TFile::Open(Form("/project/projectdirs/alice/NTuples/pPb/%s/%s.root",period.Data(),filename.Data()),"READ");
+    }
+  cout << filename.Data() << endl;
   if(!f){
       printf("Error: cannot open ntuple.root");
       return;
@@ -66,6 +68,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
   unsigned short track_mc_truth_index[kMax];
   UChar_t track_its_ncluster[kMax];
   unsigned char track_quality[kMax];
+  ULong64_t trigger_mask[2];
 
   tree->SetBranchAddress("ncluster",&ncluster);
   tree->SetBranchAddress("nmc_truth",&nmc_truth);
@@ -85,12 +88,15 @@ void Run(const int TrackBit, char* filename, bool isMC){
   tree->SetBranchAddress("track_dca_xy", track_dca_xy);
   tree->SetBranchAddress("track_dca_z", track_dca_z);
   tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);
+  if(!isMC)
+    tree->SetBranchAddress("trigger_mask", trigger_mask);
+  
 
   tree->SetBranchAddress("cluster_iso_its_04",cluster_iso_its_04);
   tree->SetBranchAddress("cluster_iso_tpc_04",cluster_iso_tpc_04);
   tree->SetBranchAddress("cluster_iso_04_truth", cluster_iso_04_truth);
-  tree->SetBranchAddress("cluster_pt", cluster_pt);
-  
+  tree->SetBranchAddress("cluster_pt", cluster_pt); 
+
   const Double_t bins[10] = {  0.1,          0.16681005,   0.27825594,   0.46415888 ,  0.77426368, 1.29154967,   2.15443469,   3.59381366,   5.9948425,   10.0};
 
   /*const Double_t bins_track[50] = {
@@ -132,7 +138,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
     phibins[i] = phimin + i*phistep;
   }
 
-  auto hCorrelation   = new TH2F("hCorrelation", "", 80, 0, 10.0, 80, 0, 10.0);
+  auto hCorrelation   = new TH2F("hCorrelation", "", 48, bins_track, 48, bins_track);
   auto hRes_Pt   = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
   auto hDen  = new TH1F("hDen", "", 48, bins_track);
   auto hNum  = new TH1F("hNum","", 48, bins_track);
@@ -174,10 +180,13 @@ void Run(const int TrackBit, char* filename, bool isMC){
   auto hTrue_eta  = new TH1F("hTrue_eta", "", 20, -1.0, 1.0);
   auto hReco_eta  = new TH1F("hReco_eta","", 20, -1.0, 1.0);
 
-  //auto hEventSelection = new TH1F("hEventSelection", "", 10, -0.5, 9.5);
-   
+  auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
+  auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
+
   hFake->Sumw2();  
   hDen->Sumw2();
+  hNum->Sumw2();
+  hNum2->Sumw2();
   hTrue_eta->Sumw2();
   hTrack_pt->Sumw2();
   int nevent = 0; 
@@ -188,7 +197,11 @@ void Run(const int TrackBit, char* filename, bool isMC){
   const bool doCutDCA = false; 
   const bool doCutChi2 = false;
 
-  Long64_t numEntries = 10000;//tree->GetEntries ();
+  ULong64_t one1 = 1;
+  //ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44) ;
+  ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);
+  std::cout << triggerMask_13f << std::endl;
+  Long64_t numEntries = tree->GetEntries ();
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
@@ -196,23 +209,41 @@ void Run(const int TrackBit, char* filename, bool isMC){
     if(nevent%1000==0) std::cout << nevent << std::endl;
     bool eventChange = true;
     //Loop over all the tracks
+    int numTrack = 0;
     for (int n = 0;  n< ntrack; n++){
       
-      if((track_quality[n]&TrackBit)==0) continue;
-      //if(TMath::Abs(track_eta[n])> maxEta) continue;
-      //if(track_its_chi_square[n]>10.0) continue;
-      //if(TrackBit == 16)
-      //if(track_its_ncluster[n] < 5) continue;
-      double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
-      //if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
+      hTrackCut->Fill(0);
+      if((track_quality[n]&TrackBit)==0) continue; //hTrackCut->Fill(1);//track quality cut
+      //std::cout << "mask\t" << trigger_mask[0] << std::endl;
+      //std::cout << "bitwise and\t" << (triggerMask_13f & trigger_mask[0]) << std::endl;
+      if(TMath::Abs(track_eta[n])> maxEta) continue; //hTrackCut->Fill(2);//eta cut
+      //if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
+      if(filename(0,3) == "13f")
+	{
+	  if((triggerMask_13f & trigger_mask[0]) == 0) continue; 
+	  hTrackCut->Fill(4);//trigger selection
+	}
+      if(track_its_chi_square[n]>36.0) continue; //hTrackCut->Fill(5);//its cluster chi^2 cut
+      if(TrackBit == 16)
+	{
+	  if(track_its_ncluster[n] < 5) continue; 
+	  hTrackCut->Fill(6);//its cluster cut
+	}
+      double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
+      //double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);//mine
+      if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue; //hTrackCut->Fill(7);//distance of closest approach cut
+
+      numTrack++;
       hTrack_pt->Fill(track_pt[n]);
       if (eventChange) {numEvents++; eventChange = false;}
       
 
       unsigned short index = track_mc_truth_index[n];
       if(index>65534) continue; //particles not associated with MC particle (i.e, secondaries or fakes)
-      if((TMath::Abs(mc_truth_pdg_code[index])!=211) && (TMath::Abs(mc_truth_pdg_code[index])!=321) && (TMath::Abs(mc_truth_pdg_code[index])!=2212)) continue;
-      
+      if((TMath::Abs(mc_truth_pdg_code[index])!= 211)  && 
+	 (TMath::Abs(mc_truth_pdg_code[index])!=321) && 
+	 (TMath::Abs(mc_truth_pdg_code[index])!=2212)) continue;//*/
+      //if(int(mc_truth_charge[index])==0) continue;
       hCorrelation->Fill(mc_truth_pt[index], track_pt[n]);
       hRes_Pt->Fill(mc_truth_pt[index], 100*(track_pt[n]-mc_truth_pt[index])/(mc_truth_pt[index]));
       
@@ -229,13 +260,17 @@ void Run(const int TrackBit, char* filename, bool isMC){
       hCorrelation_dPhipT->Fill(track_phi[n]-mc_truth_phi[index], mc_truth_pt[index]);
 
     }//end loop over tracks
-
+    
+    hNumTracks->Fill(numTrack);
+    
     //Loop over MC particles (all are primaries), pick charged ones with |eta|<0.8
     for (int n = 0;  n< nmc_truth; n++){
         int pdgcode = mc_truth_pdg_code[n];
-        if((TMath::Abs(mc_truth_pdg_code[n])!=211) && (TMath::Abs(mc_truth_pdg_code[n])!=321) && (TMath::Abs(mc_truth_pdg_code[n])!=2212)) continue;
-        if(int(mc_truth_charge[n])==0) continue;
-        //if(TMath::Abs(mc_truth_eta[n])> maxEta) continue; //skip particles with |eta|>0.8
+        if((TMath::Abs(mc_truth_pdg_code[n])!= 211) && 
+	   (TMath::Abs(mc_truth_pdg_code[n])!=321) && 
+	   (TMath::Abs(mc_truth_pdg_code[n])!=2212)) continue;//*/
+	//if(int(mc_truth_charge[n])==0) continue;
+        if(TMath::Abs(mc_truth_eta[n])> maxEta) continue; //skip particles with |eta|>0.8
         hDen->Fill(mc_truth_pt[n]);
 	if(mc_truth_pt[n] > 1.0)
 	  hTrue_eta->Fill(mc_truth_eta[n]);
@@ -244,14 +279,15 @@ void Run(const int TrackBit, char* filename, bool isMC){
         hNum2D->Fill(mc_truth_phi[n], mc_truth_eta[n]);
      }
     
-     for (int n=0; n< ntrack; n++){ 
+    for (int n=0; n< ntrack; n++){ 
          if((track_quality[n]&TrackBit)==0) continue;
-	 //if(doCutChi2 && track_its_chi_square[n]>10) continue;
-         //if(TMath::Abs(track_eta[n])> maxEta) continue;
-	 double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
-	 //if(doCutDCA && TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
+	 if(doCutChi2 && track_its_chi_square[n]>36) continue;
+         if(TMath::Abs(track_eta[n])> maxEta) continue;
+	 double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
+	 //double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
+	 if(doCutDCA && TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
          double chi2 = track_its_chi_square[n];
-	 //if(chi2>10.0) chi2=10.0;
+	 if(chi2>10.0) chi2=10.0;
          hReco->Fill(track_pt[n]);
          
          if(track_pt[n]>1.0){
@@ -314,7 +350,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
      g_mean->SetPoint(g_mean->GetN(), (maxpt+minpt)/2.0, gausfit->GetParameter(1));
      g_mean->SetPointError(g_mean->GetN()-1, binwidth/2.0, gausfit->GetParError(1));
      
-     c1->SaveAs(Form("PDFOUTPUT/projecting%i_TrackBit%i_%s.pdf", i, TrackBit,filename));
+     c1->SaveAs(Form("PDFOUTPUT/projecting%i_TrackBit%i_%s.pdf", i, TrackBit,filename.Data()));
    }
 
    cout << numEvents << endl;
@@ -342,7 +378,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
 
    auto c = new TCanvas();   
   
-   auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename), "RECREATE");
+   auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");
    //   
    hDen->SetTitle("; p_{T}^{reco} [GeV]; entries");
    hDen->SetLineColor(1);
@@ -354,7 +390,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
    //hDen->SetMinimum(hDen->GetMinimum()/100.0);
    //myText(0.18, 0.96, kBlack, "All tracks");
    //myText(0.18, 0.92, kRed, "Unmatched tracks");
-   c->SaveAs(Form("PDFOUTPUT/FakeRateDistributions_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/FakeRateDistributions_%i_%s.pdf",TrackBit,filename.Data()));
    gPad->SetLogy(0);
    gPad->SetLogx(0);
    c->Clear();
@@ -368,7 +404,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
    hChi2_fake->Draw("same");
    gPad->SetLogy(kTRUE);
    //gPad->SetLogx(kTRUE);
-   c->SaveAs(Form("PDFOUTPUT/Chi2_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Chi2_%i_%s.pdf",TrackBit,filename.Data()));
    c->Clear();
    gPad->SetLogx(kFALSE);
       
@@ -417,6 +453,18 @@ void Run(const int TrackBit, char* filename, bool isMC){
    //eta_eff->SetTitle("; #eta^{true} ; #epsilon");
    //eta_eff->Write("Efficiency_eta");
 
+   hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
+   hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
+   hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
+   hTrackCut->GetXaxis()->SetBinLabel(4,"Trigger cut");
+   hTrackCut->GetXaxis()->SetBinLabel(5,"ITS nCluster cut");
+   hTrackCut->GetXaxis()->SetBinLabel(6,"ITS #chi^{2} cut");
+   hTrackCut->GetXaxis()->SetBinLabel(7,"DCA cut");
+   hTrackCut->Write("hTrackCut");
+
+   hNumTracks->SetTitle("Number of tracks passing all cuts;Number of Tracks; Counts");
+   hNumTracks->Write("hNumTracks");
+
    TGraphAsymmErrors* eff = new TGraphAsymmErrors(hNum, hDen);
    eff->SetTitle("; p_{T}^{true} ; #epsilon");
    eff->Write("Efficiency");
@@ -426,7 +474,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
    gPad->SetLogz();
    hCorrelation_dEtapT->GetYaxis()->SetNdivisions(8);
    hCorrelation_dEtapT->GetXaxis()->SetNdivisions(10);
-   c->SaveAs(Form("PDFOUTPUT/Correlation_deta_pt%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Correlation_deta_pt%i_%s.pdf",TrackBit,filename.Data()));
 
    c->Clear();
    hITSclus->Draw("hist");
@@ -438,7 +486,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
  
 
    gPad->SetLogy(kTRUE);
-   c->SaveAs(Form("PDFOUTPUT/ITSnCluster_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/ITSnCluster_%i_%s.pdf",TrackBit,filename.Data()));
    c->Clear();
 
    
@@ -450,7 +498,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
    //myText(0.18, 0.96, kBlack, "All tracks");
    //myText(0.18, 0.92, kRed, "Unmatched tracks");
    //myText(0.18, 0.82, kBlack, "p_{T}>1 GeV");
-   c->SaveAs(Form("PDFOUTPUT/DCA_xy%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/DCA_xy%i_%s.pdf",TrackBit,filename.Data()));
    gPad->SetLogy(0);
    c->Clear();
 
@@ -464,11 +512,11 @@ void Run(const int TrackBit, char* filename, bool isMC){
    //hIso_Truth->SetLineColorAlpha(4,0.5);
    // hIso_Truth->Draw("histsame");
    gPad->SetLogy(0); 
-   c->SaveAs(Form("PDFOUTPUT/Iso%s.pdf",filename));
+   c->SaveAs(Form("PDFOUTPUT/Iso%s.pdf",filename.Data()));
    c->Clear();
 
    hIso_Truth->Draw("hist");
-   c->SaveAs(Form("PDFOUTPUT/IsoTrue%s.pdf",filename));
+   c->SaveAs(Form("PDFOUTPUT/IsoTrue%s.pdf",filename.Data()));
    c->Clear();
 
 
@@ -480,7 +528,7 @@ void Run(const int TrackBit, char* filename, bool isMC){
    //myText(0.18, 0.96, kBlack, "All tracks");
    //myText(0.18, 0.92, kRed, "Unmatched tracks");
    //myText(0.18, 0.82, kBlack, "p_{T}>1 GeV");
-   c->SaveAs(Form("PDFOUTPUT/DCA_z%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/DCA_z%i_%s.pdf",TrackBit,filename.Data()));
    gPad->SetLogy(kFALSE);
 
 
@@ -488,44 +536,44 @@ void Run(const int TrackBit, char* filename, bool isMC){
    gPad->SetLogz();
    hCorrelation_dPhipT->GetYaxis()->SetNdivisions(8);
    hCorrelation_dPhipT->GetXaxis()->SetNdivisions(10);
-   c->SaveAs(Form("PDFOUTPUT/Correlation_dphi_pt%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Correlation_dphi_pt%i_%s.pdf",TrackBit,filename.Data()));
    
    c->Clear();
    hCorrelation->Draw("colz");
    gPad->SetLogz();
    hCorrelation->GetYaxis()->SetNdivisions(5);
    hCorrelation->GetXaxis()->SetNdivisions(5);
-   c->SaveAs(Form("PDFOUTPUT/MomentumCorrelation_dphi_pt%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/MomentumCorrelation_dphi_pt%i_%s.pdf",TrackBit,filename.Data()));
 
    c->Clear();
    hNum2Deta->Draw("colz");
    hNum2Deta->SetTitle("; #eta^{true} ; p_{T}^{true} [GeV]");
    gPad->SetLogz(0);
    gPad->SetLogy(1);
-   c->SaveAs(Form("PDFOUTPUT/Eff_Eta_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Eff_Eta_%i_%s.pdf",TrackBit,filename.Data()));
    c->Clear();
    hNum2Dphi->Draw("colz");
    hNum2Dphi->SetTitle("; #phi^{true} ; p_{T}^{true} [GeV]");
    gPad->SetLogz(0);
    gPad->SetLogy(1);
-   c->SaveAs(Form("PDFOUTPUT/Eff_phi_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Eff_phi_%i_%s.pdf",TrackBit,filename.Data()));
 
    c->Clear();
    gPad->SetLogy(0);
    g_sigma->Draw("AP");
-   c->SaveAs(Form("PDFOUTPUT/ResolutionPT_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/ResolutionPT_%i_%s.pdf",TrackBit,filename.Data()));
 
    c->Clear();
    eff->Draw("AP");
    eff->SetMaximum(1.0);
    eff->SetMinimum(0.0);
    gPad->SetLogx(1);
-   c->SaveAs(Form("PDFOUTPUT/Efficiency_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/Efficiency_%i_%s.pdf",TrackBit,filename.Data()));
 
    c->Clear();
    hFake->Draw();
    hFake->SetTitle("; p_{T}^{reco} [GeV]; Fake Rate");
-   c->SaveAs(Form("PDFOUTPUT/FakeRate_%i_%s.pdf",TrackBit,filename));
+   c->SaveAs(Form("PDFOUTPUT/FakeRate_%i_%s.pdf",TrackBit,filename.Data()));
    
    c->Clear();
    c->Close();
@@ -550,11 +598,21 @@ void efficiencyCalculation(){
   //Run(3, "17g8a_woSDD");
   //Run(16, "17g8a_woSDD");
   
-  Run(3, "17g6a3_pthat2_clusterv2_small", true);
+  //Run(3, "17g6a3_pthat2_clusterv2_small", true);
   Run(16, "17g6a3_pthat2_clusterv2_small", true);
+
+  //Run(3, "13b_pass4_v2_1run", false);
+  //Run(16, "13b_pass4_v2_1run", false);
+
+  //Run(3, "13b_pass4_v2_3run", false);
+  //Run(16, "13b_pass4_v2_3run", false);
+
+  //Run(3, "13f_pass4_v2_minbias_1run", false);
+  //Run(16, "13f_pass4_v2_minbias_1run", false);
+
+  //Run(3, "13c_pass4_v2", false);
+  //Run(16, "13c_pass4_v2", false);
   
-  Run(3, "13c_pass4_v2", false);
-  Run(16, "13c_pass4_v2", false);
   return;
 }
 
