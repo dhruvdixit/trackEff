@@ -183,6 +183,7 @@ void Run(const int TrackBit, TString filename, bool isMC){
   auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
   auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
 
+  //TH1D* hTrack_pt = new TH1F("hTrack_pt","", 48, bins_track);
   hFake->Sumw2();  
   hDen->Sumw2();
   hNum->Sumw2();
@@ -199,7 +200,8 @@ void Run(const int TrackBit, TString filename, bool isMC){
 
   ULong64_t one1 = 1;
   //ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44) ;
-  ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);
+  //ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);
+  ULong64_t triggerMask_13f = (one1 << 24);
   std::cout << triggerMask_13f << std::endl;
   Long64_t numEntries = tree->GetEntries ();
   std::cout << numEntries << std::endl;
@@ -213,17 +215,15 @@ void Run(const int TrackBit, TString filename, bool isMC){
     for (int n = 0;  n< ntrack; n++){
       
       hTrackCut->Fill(0);
-      if((track_quality[n]&TrackBit)==0) continue; //hTrackCut->Fill(1);//track quality cut
-      //std::cout << "mask\t" << trigger_mask[0] << std::endl;
-      //std::cout << "bitwise and\t" << (triggerMask_13f & trigger_mask[0]) << std::endl;
-      if(TMath::Abs(track_eta[n])> maxEta) continue; //hTrackCut->Fill(2);//eta cut
-      //if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
+      if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
+      if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
+      if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
       if(filename(0,3) == "13f")
 	{
 	  if((triggerMask_13f & trigger_mask[0]) == 0) continue; 
 	  hTrackCut->Fill(4);//trigger selection
 	}
-      if(track_its_chi_square[n]>36.0) continue; //hTrackCut->Fill(5);//its cluster chi^2 cut
+      if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(5);//its cluster chi^2 cut
       if(TrackBit == 16)
 	{
 	  if(track_its_ncluster[n] < 5) continue; 
@@ -231,7 +231,7 @@ void Run(const int TrackBit, TString filename, bool isMC){
 	}
       double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
       //double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);//mine
-      if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue; //hTrackCut->Fill(7);//distance of closest approach cut
+      if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue; hTrackCut->Fill(7);//distance of closest approach cut
 
       numTrack++;
       hTrack_pt->Fill(track_pt[n]);
@@ -355,7 +355,7 @@ void Run(const int TrackBit, TString filename, bool isMC){
 
    cout << numEvents << endl;
    const double tot_eta = 1.6;
-   for(int i = 1; i < hTrack_pt->GetNbinsX(); i++)
+   for(int i = 1; i < hTrack_pt->GetNbinsX()+1; i++)
      {
        double dpt = hTrack_pt->GetBinWidth(i);
 
@@ -456,10 +456,11 @@ void Run(const int TrackBit, TString filename, bool isMC){
    hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
    hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
    hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
-   hTrackCut->GetXaxis()->SetBinLabel(4,"Trigger cut");
-   hTrackCut->GetXaxis()->SetBinLabel(5,"ITS nCluster cut");
-   hTrackCut->GetXaxis()->SetBinLabel(6,"ITS #chi^{2} cut");
-   hTrackCut->GetXaxis()->SetBinLabel(7,"DCA cut");
+   hTrackCut->GetXaxis()->SetBinLabel(4,"pt cut");
+   hTrackCut->GetXaxis()->SetBinLabel(5,"Trigger cut");
+   hTrackCut->GetXaxis()->SetBinLabel(6,"ITS nCluster cut");
+   hTrackCut->GetXaxis()->SetBinLabel(7,"ITS #chi^{2} cut");
+   hTrackCut->GetXaxis()->SetBinLabel(8,"DCA cut");
    hTrackCut->Write("hTrackCut");
 
    hNumTracks->SetTitle("Number of tracks passing all cuts;Number of Tracks; Counts");
@@ -599,13 +600,13 @@ void efficiencyCalculation(){
   //Run(16, "17g8a_woSDD");
   
   //Run(3, "17g6a3_pthat2_clusterv2_small", true);
-  Run(16, "17g6a3_pthat2_clusterv2_small", true);
+  //Run(16, "17g6a3_pthat2_clusterv2_small", true);
 
   //Run(3, "13b_pass4_v2_1run", false);
   //Run(16, "13b_pass4_v2_1run", false);
 
-  //Run(3, "13b_pass4_v2_3run", false);
-  //Run(16, "13b_pass4_v2_3run", false);
+  Run(3, "13b_pass4_v2_3run", false);
+  Run(16, "13b_pass4_v2_3run", false);
 
   //Run(3, "13f_pass4_v2_minbias_1run", false);
   //Run(16, "13f_pass4_v2_minbias_1run", false);

@@ -54,10 +54,6 @@ void makeEffPlots()
   TGraphAsymmErrors* eff_ITS = (TGraphAsymmErrors*)fITS->Get("Efficiency");
   eff_TPC->SetLineColor(kRed);
   eff_ITS->SetLineColor(kBlack);
-  eff_TPC->GetXaxis()->SetRangeUser(0.15,10);
-  eff_ITS->GetXaxis()->SetRangeUser(0.15,10);
-  eff_TPC->GetYaxis()->SetRangeUser(0,1);
-  eff_ITS->GetYaxis()->SetRangeUser(0,1);
 
   TLegend* leg2 = new TLegend(0.7,0.15,0.85,0.3);
   leg2->AddEntry(eff_TPC,"TPC+ITS");
@@ -88,11 +84,12 @@ void makeEffPlots()
   hEff_ITS->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
   hEff_TPC->SetLineColor(kRed);
   hEff_ITS->SetLineColor(kBlack);
-  hEff_TPC->GetXaxis()->SetRangeUser(0.15,10);
-  hEff_ITS->GetXaxis()->SetRangeUser(0.15,10);
-  hEff_TPC->GetYaxis()->SetRangeUser(0,2);
-  hEff_ITS->GetYaxis()->SetRangeUser(0,2);
-  
+
+  TString mcName = "17g6a3_pthat2";
+  TFile* effFile = new TFile(Form("%s_efficiency.root", mcName.Data()), "RECREATE");
+  hEff_TPC->Write("TPC_efficiency");
+  hEff_ITS->Write("ITS_efficiency");
+  effFile->Close();
   ///////////////////////////Resolution Efficiency/////////////////////////
   TH1F* hReco_TPC = (TH1F*)fTPC->Get("hReco");
   TH1F* hReco_ITS = (TH1F*)fITS->Get("hReco");
@@ -108,10 +105,6 @@ void makeEffPlots()
   hResoEff_ITS->SetTitle(";p_{T}^{reco} (GeV/c);#epsilon'");
   hResoEff_TPC->SetLineColor(kRed);
   hResoEff_ITS->SetLineColor(kBlack);
-  hResoEff_TPC->GetXaxis()->SetRangeUser(0.15,10);
-  hResoEff_ITS->GetXaxis()->SetRangeUser(0.15,10);
-  hResoEff_TPC->GetYaxis()->SetRangeUser(0,1);
-  hResoEff_ITS->GetYaxis()->SetRangeUser(0,1);
   hResoEff_TPC->SetMarkerColor(kRed);
   hResoEff_ITS->SetMarkerColor(kBlack);
   hResoEff_TPC->SetMarkerStyle(25);
@@ -132,7 +125,7 @@ void makeEffPlots()
   hResoEff_ITS->Draw("P HIST SAME");
   
   leg3->Draw("SAME" );
-  
+
   
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// //////////////////////////////////////////DATA////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -141,10 +134,10 @@ void makeEffPlots()
   //TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13c_pass4_v2.root","READ");
   //TFile* fTPCd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13b_pass4_v2_1run.root","READ");
   //TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13b_pass4_v2_1run.root","READ");
-  //TFile* fTPCd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13b_pass4_v2_3run.root","READ");
-  //TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13b_pass4_v2_3run.root","READ");
-  TFile* fTPCd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13f_pass4_v2_minbias_1run.root","READ");
-  TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13f_pass4_v2_minbias_1run.root","READ");
+  TFile* fTPCd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13b_pass4_v2_3run.root","READ");
+  TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13b_pass4_v2_3run.root","READ");
+  //TFile* fTPCd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_3_13f_pass4_v2_minbias_1run.root","READ");
+  //TFile* fITSd = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_13f_pass4_v2_minbias_1run.root","READ");
   
   if(!fTPCd->IsOpen())
     {
@@ -166,8 +159,6 @@ void makeEffPlots()
   hTrack_ITS->SetTitle(";p_{T} (GeV/c);1/N_{evn} dn^{2}/dp_{T}d#eta");
   hTrack_TPC->SetMarkerColor(kRed);
   hTrack_ITS->SetMarkerColor(kBlack);
-  hTrack_TPC->GetXaxis()->SetRangeUser(0.15,10);
-  hTrack_ITS->GetXaxis()->SetRangeUser(0.15,10);
   hTrack_TPC->SetMarkerStyle(8);
   hTrack_ITS->SetMarkerStyle(8);
   
@@ -220,7 +211,6 @@ void makeEffPlots()
       hTrack_data->SetBinError(i, published_Data_errors[i-1]); 
     }
   hTrack_data->SetTitle("p_{T} Spectra;p_{T} (GeV/c);1/N_{evn} dn^{2}/dp_{T}d#eta");
-  hTrack_data->GetXaxis()->SetRangeUser(0.15,10);
   hTrack_data->SetLineColor(kBlue);
   hTrack_data->SetMarkerColor(kBlue);
   hTrack_data->SetMarkerStyle(8);
@@ -266,10 +256,6 @@ void makeEffPlots()
   hTrack_ITS2->SetMaximum(2);
   hTrack_TPC2->SetTitle(";p_{T} (GeV/c);Ratio");
   hTrack_ITS2->SetTitle(";p_{T} (GeV/c);Ratio");
-  hTrack_TPC2->GetXaxis()->SetRangeUser(0.15,10);
-  hTrack_ITS2->GetXaxis()->SetRangeUser(0.15,10);
-  hTrack_TPC2->GetYaxis()->SetRangeUser(0,2);
-  hTrack_ITS2->GetYaxis()->SetRangeUser(0,2);
   
   TLegend* leg5_TPC = new TLegend(0.15,0.15,0.45,0.35);
   leg5_TPC->AddEntry(hEff_TPC,"Efficiency from MC");

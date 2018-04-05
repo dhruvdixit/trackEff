@@ -17,67 +17,15 @@ void makeParticleEffPlots()
   TFile* fITS_protons = new TFile("/global/homes/d/ddixit/trackEff/OutputData/fout_16_17g6a3_pthat2_clusterv2_small_protons.root","READ");
   
   //////////////////////Track Efficiency///////////////////////////////
-  
-  /*TGraphAsymmErrors* eff_TPC_pions = (TGraphAsymmErrors*)fTPC_pions->Get("Efficiency");
-  TGraphAsymmErrors* eff_ITS_pions = (TGraphAsymmErrors*)fITS_pions->Get("Efficiency");
-  eff_TPC_pions->SetLineColor(kRed);
-  eff_ITS_pions->SetLineColor(kRed);
-  eff_TPC_pions->GetXaxis()->SetRangeUser(0.15,10);
-  eff_ITS_pions->GetXaxis()->SetRangeUser(0.15,10);
-  eff_TPC_pions->GetYaxis()->SetRangeUser(0,1);
-  eff_ITS_pions->GetYaxis()->SetRangeUser(0,1);
-  eff_TPC_pions->Rebin(4);
-  eff_ITS_pions->Rebin(4);
-  
-  TGraphAsymmErrors* eff_TPC_kaons = (TGraphAsymmErrors*)fTPC_kaons->Get("Efficiency");
-  TGraphAsymmErrors* eff_ITS_kaons = (TGraphAsymmErrors*)fITS_kaons->Get("Efficiency");
-  eff_TPC_kaons->SetLineColor(kBlack);
-  eff_ITS_kaons->SetLineColor(kBlack);
-  eff_TPC_kaons->GetXaxis()->SetRangeUser(0.15,10);
-  eff_ITS_kaons->GetXaxis()->SetRangeUser(0.15,10);
-  eff_TPC_kaons->GetYaxis()->SetRangeUser(0,1);
-  eff_ITS_kaons->GetYaxis()->SetRangeUser(0,1);
-  eff_TPC_kaons->Rebin(4);
-  eff_ITS_kaons->Rebin(4);
-
-  TGraphAsymmErrors* eff_TPC_protons = (TGraphAsymmErrors*)fTPC_protons->Get("Efficiency");
-  TGraphAsymmErrors* eff_ITS_protons = (TGraphAsymmErrors*)fITS_protons->Get("Efficiency");
-  eff_TPC_protons->SetLineColor(kBlue);
-  eff_ITS_protons->SetLineColor(kBlue);
-  eff_TPC_protons->GetXaxis()->SetRangeUser(0.15,10);
-  eff_ITS_protons->GetXaxis()->SetRangeUser(0.15,10);
-  eff_TPC_protons->GetYaxis()->SetRangeUser(0,1);
-  eff_ITS_protons->GetYaxis()->SetRangeUser(0,1);
-  eff_TPC_protons->Rebin(4);
-  eff_ITS_protons->Rebin(4);
-
-  TLegend* leg1 = new TLegend(0.7,0.15,0.85,0.3);
-  leg1->AddEntry(eff_TPC_pions,"Pions");
-  leg1->AddEntry(eff_TPC_kaons,"Kaons");
-  leg1->AddEntry(eff_TPC_protons,"Protons");
-  
-  TCanvas* c1 = new TCanvas("c1","c1",800,600);
-  eff_TPC_pions->Draw("");
-  eff_TPC_kaons->Draw("same");
-  eff_TPC_protons->Draw("same");
-  leg1->Draw("same");
-
-  TLegend* leg2 = new TLegend(0.7,0.15,0.85,0.3);
-  leg2->AddEntry(eff_ITS_pions,"Pions");
-  leg2->AddEntry(eff_ITS_kaons,"Kaons");
-  leg2->AddEntry(eff_ITS_protons,"Protons");
-  
-  TCanvas* c2 = new TCanvas("c2","c2",800,600);
-  eff_ITS_pions->Draw("");
-  eff_ITS_kaons->Draw("same");
-  eff_ITS_protons->Draw("same");
-  leg2->Draw("same");//*/
-
-    
+     
   TH1F* hTrue_TPC_pions = (TH1F*)fTPC_pions->Get("hTruth");
   TH1F* hRecoEmbed_TPC_pions = (TH1F*)fTPC_pions->Get("hRecoEmbed");
   TH1F* hTrue_ITS_pions = (TH1F*)fITS_pions->Get("hTruth");
   TH1F* hRecoEmbed_ITS_pions = (TH1F*)fITS_pions->Get("hRecoEmbed");
+  hTrue_TPC_pions->Rebin(4);
+  hRecoEmbed_TPC_pions->Rebin(4);
+  hTrue_ITS_pions->Rebin(4);
+  hRecoEmbed_ITS_pions->Rebin(4);
   TH1F* hEff_TPC_pions = (TH1F*)hRecoEmbed_TPC_pions->Clone("hEff_TPC_pions");
   hEff_TPC_pions->Divide(hTrue_TPC_pions);
   TH1F* hEff_ITS_pions = (TH1F*)hRecoEmbed_ITS_pions->Clone("hEff_ITS_pions");
@@ -88,18 +36,20 @@ void makeParticleEffPlots()
   hEff_ITS_pions->SetMarkerStyle(24);
   hEff_TPC_pions->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
   hEff_ITS_pions->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
-  hEff_TPC_pions->GetXaxis()->SetRangeUser(0.15,10);
-  hEff_ITS_pions->GetXaxis()->SetRangeUser(0.15,10);
-  //hEff_TPC_pions->GetYaxis()->SetRangeUser(0,10);
-  //hEff_ITS_pions->GetYaxis()->SetRangeUser(0,10);
-  hEff_TPC_pions->Rebin(4);
-  hEff_ITS_pions->Rebin(4);
+  //hEff_TPC_pions->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_ITS_pions->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_TPC_pions->Rebin(4);
+  //hEff_ITS_pions->Rebin(4);
 
 
   TH1F* hTrue_TPC_kaons = (TH1F*)fTPC_kaons->Get("hTruth");
   TH1F* hRecoEmbed_TPC_kaons = (TH1F*)fTPC_kaons->Get("hRecoEmbed");
   TH1F* hTrue_ITS_kaons = (TH1F*)fITS_kaons->Get("hTruth");
   TH1F* hRecoEmbed_ITS_kaons = (TH1F*)fITS_kaons->Get("hRecoEmbed");
+  hTrue_TPC_kaons->Rebin(4);
+  hRecoEmbed_TPC_kaons->Rebin(4);
+  hTrue_ITS_kaons->Rebin(4);
+  hRecoEmbed_ITS_kaons->Rebin(4);
   TH1F* hEff_TPC_kaons = (TH1F*)hRecoEmbed_TPC_kaons->Clone("hEff_TPC_kaons");
   hEff_TPC_kaons->Divide(hTrue_TPC_kaons);
   TH1F* hEff_ITS_kaons = (TH1F*)hRecoEmbed_ITS_kaons->Clone("hEff_ITS_kaons");
@@ -110,18 +60,20 @@ void makeParticleEffPlots()
   hEff_ITS_kaons->SetMarkerStyle(24);
   hEff_TPC_kaons->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
   hEff_ITS_kaons->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
-  hEff_TPC_kaons->GetXaxis()->SetRangeUser(0.15,10);
-  hEff_ITS_kaons->GetXaxis()->SetRangeUser(0.15,10);
-  //hEff_TPC_kaons->GetYaxis()->SetRangeUser(0,10);
-  //hEff_ITS_kaons->GetYaxis()->SetRangeUser(0,10);
-  hEff_TPC_kaons->Rebin(4);
-  hEff_ITS_kaons->Rebin(4);
+  //hEff_TPC_kaons->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_ITS_kaons->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_TPC_kaons->Rebin(4);
+  //hEff_ITS_kaons->Rebin(4);
 
 
   TH1F* hTrue_TPC_protons = (TH1F*)fTPC_protons->Get("hTruth");
   TH1F* hRecoEmbed_TPC_protons = (TH1F*)fTPC_protons->Get("hRecoEmbed");
   TH1F* hTrue_ITS_protons = (TH1F*)fITS_protons->Get("hTruth");
   TH1F* hRecoEmbed_ITS_protons = (TH1F*)fITS_protons->Get("hRecoEmbed");
+  hTrue_TPC_protons->Rebin(4);
+  hRecoEmbed_TPC_protons->Rebin(4);
+  hTrue_ITS_protons->Rebin(4);
+  hRecoEmbed_ITS_protons->Rebin(4);
   TH1F* hEff_TPC_protons = (TH1F*)hRecoEmbed_TPC_protons->Clone("hEff_TPC_protons");
   hEff_TPC_protons->Divide(hTrue_TPC_protons);
   TH1F* hEff_ITS_protons = (TH1F*)hRecoEmbed_ITS_protons->Clone("hEff_ITS_protons");
@@ -132,12 +84,10 @@ void makeParticleEffPlots()
   hEff_ITS_protons->SetMarkerStyle(24);
   hEff_TPC_protons->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
   hEff_ITS_protons->SetTitle(";p_{T}^{true} (GeV/c);#epsilon");
-  hEff_TPC_protons->GetXaxis()->SetRangeUser(0.15,10);
-  hEff_ITS_protons->GetXaxis()->SetRangeUser(0.15,10);
-  //hEff_TPC_protons->GetYaxis()->SetRangeUser(0,10);
-  //hEff_ITS_protons->GetYaxis()->SetRangeUser(0,10);
-  hEff_TPC_protons->Rebin(4);
-  hEff_ITS_protons->Rebin(4);
+  //hEff_TPC_protons->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_ITS_protons->GetXaxis()->SetRangeUser(0.15,10);
+  //hEff_TPC_protons->Rebin(4);
+  //hEff_ITS_protons->Rebin(4);
 
   TLegend* leg1 = new TLegend(0.7,0.15,0.85,0.3);
   leg1->AddEntry(hEff_TPC_pions,"Pions");
@@ -160,10 +110,6 @@ void makeParticleEffPlots()
   hEff_ITS_kaons->Draw("P E HIST SAME");
   hEff_ITS_protons->Draw("P E HIST SAME");
   leg2->Draw("SAME");
-
-
-
-
 
 
   /*///////////////////////////Resolution Efficiency/////////////////////////
@@ -244,12 +190,6 @@ void makeParticleEffPlots()
   hTrack_TPC->SetMarkerStyle(8);
   hTrack_ITS->SetMarkerStyle(8);
   
-  /*const Double_t bins_track[47] = {
-    0.2,   0.25,   0.3,   0.35,   0.4,    0.45,   0.5,    0.55,   0.6,   0.65,   
-    0.7,   0.75,   0.8,   0.85,   0.9,    0.95,   1.01,   1.1,   1.2,    1.3,   
-    1.4,   1.5,    1.6,   1.7,    1.8,    1.9,    2.0,    2.2,   2.4,    2.6,   
-    2.8,   3.0,    3.2,   3.4,    3.6,    3.8,    4.07,   4.5,   5.0,    5.5,
-    6.0,   6.5,    7.12,  8.0,    9.0,    10.0,   11.0};//my binning 
 
  const Double_t bins_track[49] = {
     0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
