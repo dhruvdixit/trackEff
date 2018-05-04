@@ -22,26 +22,22 @@
 #include <algorithm>
 #include <iostream>
 
-void Run(const int TrackBit, TString filename, bool isMC){
+void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool triggered){
   //SetAtlasStyle();
+  TString filename = address(address.Last('/')+1,address.Last('.')-address.Last('/')-1);
   TFile* f;
-  if(isMC)
-    f = TFile::Open(Form("/project/projectdirs/alice/NTuples/MC/%s.root",filename.Data()),"READ");
-  else
-    {
-      TString period = filename(0,3);
-      f = TFile::Open(Form("/project/projectdirs/alice/NTuples/pPb/%s/%s.root",period.Data(),filename.Data()),"READ");
-    }
-  cout << filename.Data() << endl;
+  f = TFile::Open(Form("/project/projectdirs/alice/NTuples/%s",address.Data()),"READ");
+
+  cout << Form("/project/projectdirs/alice/NTuples/%s",address.Data()) << endl;
   if(!f){
       printf("Error: cannot open ntuple.root");
       return;
   }
   TTree* tree;
-  if(isMC)
-    tree = (TTree*)f->Get("_tree_event");
-  else
+  if(hasAliDir)
     tree = (TTree*)f->Get("AliAnalysisTaskNTGJ/_tree_event");
+  else
+    tree = (TTree*)f->Get("_tree_event");
   if(!tree){ printf("Error: cannot find tree"); }
   const Int_t kMax = 5000;
   unsigned int ntrack;
@@ -106,19 +102,28 @@ void Run(const int TrackBit, TString filename, bool isMC){
     5.256,   5.918,   6.663,   7.501,   8.445,   9.508,   10.705,  12.052,  13.569,  15.277,
     17.2,    19.365,  21.802,  24.546,  27.636,  31.114,  35.03,   39.439,  44.403,  49.992};//*/
 
-  /*const Double_t bins_track[47] = {
-    0.2,   0.25,   0.3,   0.35,   0.4,    0.45,   0.5,    0.55,   0.6,   0.65,   
-    0.7,   0.75,   0.8,   0.85,   0.9,    0.95,   1.01,   1.1,   1.2,    1.3,   
-    1.4,   1.5,    1.6,   1.7,    1.8,    1.9,    2.0,    2.2,   2.4,    2.6,   
-    2.8,   3.0,    3.2,   3.4,    3.6,    3.8,    4.07,   4.5,   5.0,    5.5,
-    6.0,   6.5,    7.12,  8.0,    9.0,    10.0,   11.0};//my binning*/
+  //const Double_t bins_track[12] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0};//pPb
 
-  const Double_t bins_track[49] = {
+  //const Double_t bins_track[9] = {1.0,2.0,3.0,4.0,5.0,6.0,8.0,10.0, 13.0};//pp
+
+  const Double_t bins_track[37] = {
+    0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
+    0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20,
+    1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.20, 
+    3.60, 4.00, 5.00, 6.00, 8.00, 10.00, 13.00};//*/pp
+
+  /*const Double_t bins_track[49] = {
     0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
     0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20,
     1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40,
     2.60, 2.80, 3.00, 3.20, 3.40, 3.60, 3.80, 4.00, 4.50, 5.00,
-    5.50, 6.00, 6.50, 7.00, 8.00, 9.00, 10.00,11.00,12.00};//*/
+    5.50, 6.00, 6.50, 7.00, 8.00, 9.00, 10.00,11.00,12.00};//pPb*/
+
+  /*const Double_t bins_track[32] = {
+    1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 
+    2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.20, 3.40, 3.60, 3.80, 
+    4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 8.00, 9.00, 10.00,
+    11.00,12.00};//pPb*/
 
   const int nbinseta = 10;
   Double_t etabins[nbinseta+1] = {};
@@ -138,19 +143,21 @@ void Run(const int TrackBit, TString filename, bool isMC){
     phibins[i] = phimin + i*phistep;
   }
 
-  auto hCorrelation   = new TH2F("hCorrelation", "", 48, bins_track, 48, bins_track);
+  auto hCorrelation   = new TH2F("hCorrelation", "", 36, bins_track, 36, bins_track);
   auto hRes_Pt   = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
-  auto hDen  = new TH1F("hDen", "", 48, bins_track);
-  auto hNum  = new TH1F("hNum","", 48, bins_track);
-  auto hNum2  = new TH1F("hNum2","", 48, bins_track);
-  auto hFake = new TH1F("hFake", "", 48, bins_track);
-  auto hReco = new TH1F("hReco","", 48,bins_track);
-  auto hTrack_pt = new TH1F("hTrack_pt","", 48, bins_track);
-  auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, 9, bins);
-  auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, 9, bins);
-  auto hNum2Dphi = new TH2F("hNum2Dphi","", nbinsphi, phibins, 9, bins);
-  auto hDen2Dphi = new TH2F("hDen2Dphi","", nbinsphi, phibins, 9, bins);
-
+  auto hDen  = new TH1F("hDen", "", 36, bins_track);
+  auto hNum  = new TH1F("hNum","", 36, bins_track);
+  auto hNum2  = new TH1F("hNum2","", 36, bins_track);
+  auto hFake = new TH1F("hFake", "", 36, bins_track);
+  auto hReco = new TH1F("hReco","", 36,bins_track);
+  auto hTrack_pt = new TH1F("hTrack_pt","", 36, bins_track);
+  auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, 36, bins_track);
+  auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, 36, bins_track);
+  auto hEff2Deta = new TH2F("hEff2Deta","", nbinseta, etabins, 36, bins_track);
+  auto hNum2Dphi = new TH2F("hNum2Dphi","", nbinsphi, phibins, 36, bins_track);
+  auto hDen2Dphi = new TH2F("hDen2Dphi","", nbinsphi, phibins, 36, bins_track);
+  auto hEff2Dphi = new TH2F("hEff2Dphi","", nbinsphi, phibins, 36, bins_track);
+ 
   auto hNum2D = new TH2F("hNum2D","", nbinsphi, phibins, nbinseta, etabins);
   auto hDen2D = new TH2F("hDen2D","", nbinsphi, phibins, nbinseta, etabins);
 
@@ -177,13 +184,17 @@ void Run(const int TrackBit, TString filename, bool isMC){
   auto hIso_TPC = new TH1F("hIso_TPC","", 25, -10, 40);  
   auto hIso_Truth = new TH1F("hIso_Truth","", 25, -10, 40);
 
-  auto hTrue_eta  = new TH1F("hTrue_eta", "", 20, -1.0, 1.0);
-  auto hReco_eta  = new TH1F("hReco_eta","", 20, -1.0, 1.0);
+  auto hTrue_eta  = new TH1F("hTrue_eta", "", nbinseta, etabins);
+  auto hReco_eta  = new TH1F("hReco_eta", "", nbinseta, etabins);
+  auto hEta  = new TH1F("hEta", "", nbinseta, etabins);
+  auto hTrue_phi = new TH1F("hTrue_phi","", nbinsphi, phibins);
+  auto hReco_phi = new TH1F("hReco_phi","", nbinsphi, phibins);
+  auto hPhi = new TH1F("hPhi","", nbinsphi, phibins);
 
   auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
   auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
 
-  //TH1D* hTrack_pt = new TH1F("hTrack_pt","", 48, bins_track);
+  //TH1D* hTrack_pt = new TH1F("hTrack_pt","", 10, bins_track);
   hFake->Sumw2();  
   hDen->Sumw2();
   hNum->Sumw2();
@@ -199,11 +210,16 @@ void Run(const int TrackBit, TString filename, bool isMC){
   const bool doCutChi2 = false;
 
   ULong64_t one1 = 1;
-  //ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44) ;
-  //ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);
-  ULong64_t triggerMask_13f = (one1 << 24);
-  std::cout << triggerMask_13f << std::endl;
-  Long64_t numEntries = tree->GetEntries ();
+  ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);//minbias trigger
+  ULong64_t triggerMask_17p = (one1 << 1) | (one1 << 4);//minbais
+  ULong64_t trigMask = 0;
+  
+  if(filename(0,3) == "13f")
+    trigMask = triggerMask_13f;
+  if(filename(0,3) == "17p")
+    trigMask = triggerMask_17p;    
+      
+  Long64_t numEntries = 100000;//tree->GetEntries();
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
@@ -218,10 +234,11 @@ void Run(const int TrackBit, TString filename, bool isMC){
       if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
       if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
       if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
-      if(filename(0,3) == "13f")
-	{
-	  if((triggerMask_13f & trigger_mask[0]) == 0) continue; 
+      if(triggered)
+	{	  
+	  if((trigMask & trigger_mask[0]) == 0) continue; 
 	  hTrackCut->Fill(4);//trigger selection
+	  
 	}
       if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(5);//its cluster chi^2 cut
       if(TrackBit == 16)
@@ -230,20 +247,27 @@ void Run(const int TrackBit, TString filename, bool isMC){
 	  hTrackCut->Fill(6);//its cluster cut
 	}
       double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
-      //double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);//mine
-      if(TMath::Abs(track_dca_xy[n]) > DCAcut) continue; hTrackCut->Fill(7);//distance of closest approach cut
-
+      if(TMath::Abs(track_dca_xy[n]) > 2.4) continue; hTrackCut->Fill(7);//distance of closest approach cut
+      if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(8);//distance of closest approach cut
+      
       numTrack++;
       hTrack_pt->Fill(track_pt[n]);
-      if (eventChange) {numEvents++; eventChange = false;}
+      hEta->Fill(track_eta[n]);
+      hPhi->Fill(track_phi[n]);
+      if (eventChange && !isMC) {numEvents++; eventChange = false;}
       
 
       unsigned short index = track_mc_truth_index[n];
+      //int index = track_mc_truth_index[n];
       if(index>65534) continue; //particles not associated with MC particle (i.e, secondaries or fakes)
       if((TMath::Abs(mc_truth_pdg_code[index])!= 211)  && 
 	 (TMath::Abs(mc_truth_pdg_code[index])!=321) && 
 	 (TMath::Abs(mc_truth_pdg_code[index])!=2212)) continue;//*/
       //if(int(mc_truth_charge[index])==0) continue;
+      //if(TMath::Abs(mc_truth_pdg_code[index])!= 211)  continue;
+
+      if (eventChange && isMC) {numEvents++; eventChange = false;}
+
       hCorrelation->Fill(mc_truth_pt[index], track_pt[n]);
       hRes_Pt->Fill(mc_truth_pt[index], 100*(track_pt[n]-mc_truth_pt[index])/(mc_truth_pt[index]));
       
@@ -251,9 +275,14 @@ void Run(const int TrackBit, TString filename, bool isMC){
       hNum2->Fill(track_pt[n]);
       //cout << track_pt[n] << "\t" << mc_truth_pt[index] << endl;
       if(mc_truth_pt[index]>1.0)       
+	{
 	  hReco_eta->Fill(mc_truth_eta[index]);
+	  hReco_phi->Fill(mc_truth_phi[index]);
+	}
       hNum2Deta->Fill(mc_truth_eta[index], mc_truth_pt[index]);
       hNum2Dphi->Fill(mc_truth_phi[index], mc_truth_pt[index]);
+      hEff2Deta->Fill(track_pt[n]/mc_truth_pt[index],track_eta[n]/mc_truth_eta[index]);
+      hEff2Deta->Fill(track_pt[n]/mc_truth_pt[index],track_phi[n]/mc_truth_phi[index]);
       hNum2D->Fill(mc_truth_phi[index], mc_truth_eta[index]);
 
       hCorrelation_dEtapT->Fill(track_eta[n]-mc_truth_eta[index], mc_truth_pt[index]);
@@ -264,49 +293,58 @@ void Run(const int TrackBit, TString filename, bool isMC){
     hNumTracks->Fill(numTrack);
     
     //Loop over MC particles (all are primaries), pick charged ones with |eta|<0.8
-    for (int n = 0;  n< nmc_truth; n++){
-        int pdgcode = mc_truth_pdg_code[n];
-        if((TMath::Abs(mc_truth_pdg_code[n])!= 211) && 
-	   (TMath::Abs(mc_truth_pdg_code[n])!=321) && 
-	   (TMath::Abs(mc_truth_pdg_code[n])!=2212)) continue;//*/
+    for (int nTru = 0;  nTru< nmc_truth; nTru++){
+        int pdgcode = mc_truth_pdg_code[nTru];
+        if((TMath::Abs(mc_truth_pdg_code[nTru])!= 211) && 
+	   (TMath::Abs(mc_truth_pdg_code[nTru])!=321) && 
+	   (TMath::Abs(mc_truth_pdg_code[nTru])!=2212)) continue;//*/
 	//if(int(mc_truth_charge[n])==0) continue;
-        if(TMath::Abs(mc_truth_eta[n])> maxEta) continue; //skip particles with |eta|>0.8
-        hDen->Fill(mc_truth_pt[n]);
-	if(mc_truth_pt[n] > 1.0)
-	  hTrue_eta->Fill(mc_truth_eta[n]);
-        hDen2Deta->Fill(mc_truth_eta[n], mc_truth_pt[n]);
-        hDen2Dphi->Fill(mc_truth_phi[n], mc_truth_pt[n]);
-        hNum2D->Fill(mc_truth_phi[n], mc_truth_eta[n]);
-     }
+	//if(TMath::Abs(mc_truth_pdg_code[index])!= 211)  continue;
+        if(TMath::Abs(mc_truth_eta[nTru])> maxEta) continue; //skip particles with |eta|>0.8
+        hDen->Fill(mc_truth_pt[nTru]);
+	if(mc_truth_pt[nTru] > 1.0)
+	  {
+	    hTrue_eta->Fill(mc_truth_eta[nTru]);
+	    hTrue_phi->Fill(mc_truth_phi[nTru]);
+	  }
+	hDen2Deta->Fill(mc_truth_eta[nTru], mc_truth_pt[nTru]);
+        hDen2Dphi->Fill(mc_truth_phi[nTru], mc_truth_pt[nTru]);
+        hNum2D->Fill(mc_truth_phi[nTru], mc_truth_eta[nTru]);
+    }//end MC generated loop
     
     for (int n=0; n< ntrack; n++){ 
-         if((track_quality[n]&TrackBit)==0) continue;
-	 if(doCutChi2 && track_its_chi_square[n]>36) continue;
-         if(TMath::Abs(track_eta[n])> maxEta) continue;
-	 double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
-	 //double DCAcut = 0.0231+0.0315/TMath::Power(track_pt[n],1.3);
-	 if(doCutDCA && TMath::Abs(track_dca_xy[n]) > DCAcut) continue;
-         double chi2 = track_its_chi_square[n];
-	 if(chi2>10.0) chi2=10.0;
-         hReco->Fill(track_pt[n]);
+      if(track_pt[n] < 0.15) continue;
+      if(TrackBit == 16)
+	{
+	  if(track_its_ncluster[n] < 5) continue; 
+	}
+      if((track_quality[n]&TrackBit)==0) continue;
+      double chi2 = track_its_chi_square[n]; 
+      if(chi2 >36) continue;
+      if(TMath::Abs(track_eta[n])> maxEta) continue;
+      double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
+      if(TMath::Abs(track_dca_xy[n]) > 2.4) continue;
+      if(TMath::Abs(track_dca_z[n]) > 3.2) continue;
          
-         if(track_pt[n]>1.0){
-             hChi2->Fill(chi2);
-             hDCA_xy->Fill(track_dca_xy[n]);
-             hDCA_z->Fill(track_dca_z[n]);
-             hITSclus->Fill(int(track_its_ncluster[n]));
-	 }
-	 if(track_mc_truth_index[n]>65534){
-             hFake->Fill(track_pt[n]);   
-             if(track_pt[n]>1.0){
-	        hChi2_fake->Fill(chi2);
-                hDCA_xy_fake->Fill(track_dca_xy[n]);
-                hDCA_z_fake->Fill(track_dca_z[n]);
-                hITSclus_fake->Fill(int(track_its_ncluster[n]));
-	     }
-	  }
+      hReco->Fill(track_pt[n]);
+         
+      if(track_pt[n]>1.0){
+	hChi2->Fill(chi2);
+	hDCA_xy->Fill(track_dca_xy[n]);
+	hDCA_z->Fill(track_dca_z[n]);
+	hITSclus->Fill(int(track_its_ncluster[n]));
       }
-  
+      if(track_mc_truth_index[n]>65534){
+	hFake->Fill(track_pt[n]);   
+	if(track_pt[n]>1.0){
+	  hChi2_fake->Fill(chi2);
+	  hDCA_xy_fake->Fill(track_dca_xy[n]);
+	  hDCA_z_fake->Fill(track_dca_z[n]);
+	  hITSclus_fake->Fill(int(track_its_ncluster[n]));
+	}
+      }
+    }//end ntrack loop
+    
       for(int n=0; n< ncluster; n++){
         if(cluster_pt[n]<6) continue;
 	hIso_ITS->Fill(cluster_iso_its_04[n]);
@@ -367,6 +405,19 @@ void Run(const int TrackBit, TString filename, bool isMC){
        double tempErr = error/((double)numEvents*dpt*tot_eta);
        hTrack_pt->SetBinError(i, tempErr);
      }
+
+   for(int i = 1; i < hNum2->GetNbinsX()+1; i++)
+     {
+       double dpt = hNum2->GetBinWidth(i);
+       
+       double content = hNum2->GetBinContent(i);
+       double temp = content/((double)numEvents*dpt*tot_eta);
+       hNum2->SetBinContent(i, temp);
+
+       double error = hNum2->GetBinError(i);
+       double tempErr = error/((double)numEvents*dpt*tot_eta);
+       hNum2->SetBinError(i, tempErr);
+     }
    
    auto p1 = new TF1("p1","[0] + [1]*x", 0.50, 10.0);
    p1->SetLineColor(kRed);   
@@ -378,6 +429,7 @@ void Run(const int TrackBit, TString filename, bool isMC){
 
    auto c = new TCanvas();   
   
+   filename += "_fullppBins_13gevRange_changeTrig";
    auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");
    //   
    hDen->SetTitle("; p_{T}^{reco} [GeV]; entries");
@@ -446,13 +498,20 @@ void Run(const int TrackBit, TString filename, bool isMC){
 
    hTrue_eta->Write("hTrue_eta");
    hReco_eta->Write("hReco_eta");
-   
+   hTrue_phi->Write("hTrue_phi");
+   hReco_phi->Write("hReco_phi");
+   hReco_eta->Divide(hTrue_eta);
+   hReco_eta->Write("hEff_eta");
+   hReco_phi->Divide(hTrue_phi);
+   hReco_phi->Write("hEff_phi");
+
    hTrack_pt->SetTitle(";p_{T} GeV/c;dn/dp_{T}");
    hTrack_pt->Write("track_pt");
-   //TH1 eta_eff= new TGraphAsymmErrors(hReco_eta, hTrue_eta);
-   //eta_eff->SetTitle("; #eta^{true} ; #epsilon");
-   //eta_eff->Write("Efficiency_eta");
-
+   hEta->SetTitle(";#eta;counts");
+   hEta->Write("hEta");
+   hPhi->SetTitle(";#phi;counts");
+   hPhi->Write("hPhi");
+     
    hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
    hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
    hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
@@ -460,7 +519,8 @@ void Run(const int TrackBit, TString filename, bool isMC){
    hTrackCut->GetXaxis()->SetBinLabel(5,"Trigger cut");
    hTrackCut->GetXaxis()->SetBinLabel(6,"ITS nCluster cut");
    hTrackCut->GetXaxis()->SetBinLabel(7,"ITS #chi^{2} cut");
-   hTrackCut->GetXaxis()->SetBinLabel(8,"DCA cut");
+   hTrackCut->GetXaxis()->SetBinLabel(8,"DCAr cut");
+   hTrackCut->GetXaxis()->SetBinLabel(9,"DCAz cut");
    hTrackCut->Write("hTrackCut");
 
    hNumTracks->SetTitle("Number of tracks passing all cuts;Number of Tracks; Counts");
@@ -582,10 +642,9 @@ void Run(const int TrackBit, TString filename, bool isMC){
   
 }
 
-
-void efficiencyCalculation(){
- 
- 
+    
+void efficiencyCalculation(){  
+  
   //Run(16, "16c2");
   // Run(3, "16c2");
   
@@ -599,21 +658,46 @@ void efficiencyCalculation(){
   //Run(3, "17g8a_woSDD");
   //Run(16, "17g8a_woSDD");
   
-  //Run(3, "17g6a3_pthat2_clusterv2_small", true);
-  //Run(16, "17g6a3_pthat2_clusterv2_small", true);
-
-  //Run(3, "13b_pass4_v2_1run", false);
-  //Run(16, "13b_pass4_v2_1run", false);
-
-  Run(3, "13b_pass4_v2_3run", false);
-  Run(16, "13b_pass4_v2_3run", false);
-
-  //Run(3, "13f_pass4_v2_minbias_1run", false);
-  //Run(16, "13f_pass4_v2_minbias_1run", false);
-
-  //Run(3, "13c_pass4_v2", false);
-  //Run(16, "13c_pass4_v2", false);
+  //Input to Run is as follow: Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool triggered)
   
+  ////////////////////////////////pPb////////////////////////////////////
+
+  ////////////////////////////////MC////////////////////////////////////
+
+  //Run(3, "MC/17g6a3_pthat2_clusterv2_small", true, false, false);
+  //Run(16, "MC/17g6a3_pthat2_clusterv2_small", true, false, false);
+  
+  //Run(3, "MC/17g6a3_pthat2_latest", true, true, false);
+  //Run(16, "MC/17g6a3_pthat2_latest", true, true, false);
+  
+  //Run(3, "MC/17g6a3_pthat6_v2_noClusCut", true, true, false);
+  //Run(16, "MC/17g6a3_pthat6_v2_noClusCut", true, true, false);
+
+  Run(3, "MC/18b10a_calo_pthat2.root", true, true, false);
+  Run(16, "MC/18b10a_calo_pthat2.root", true, true, false);
+
+  //Run(3, "MC/18b10b_calo_pthat2.root", true, true, false);
+  //Run(16, "MC/18b10b_calo_pthat2.root", true, true, false);
+
+  //////////////////////////////////Data///////////////////////////////////////
+  //Run(3, "pPb/13b/13b_pass4_v2_1run", false, true, false);
+  //Run(16, "pPb/13b/13b_pass4_v2_1run", false, true, false);
+  
+  //Run(3, "pPb/13f/13b_pass4_v2_3run", false, true, false);
+  //Run(16, "pPb/13f/13b_pass4_v2_3run", false, true, false);
+  
+  //Run(3, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);
+  //Run(16, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);
+  
+  //Run(3, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
+  //Run(16, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
+    
+  //Run(3, "pPb/13c/13c_pass4_v2", false, true, false);
+  //Run(16, "pPb/13c/13c_pass4_v2", false, true, false);
+  
+  Run(3, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
+  Run(16, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
+
   return;
 }
 
