@@ -6,10 +6,6 @@
 //#include "TTreeReaderValue.h"
 #include "TMath.h"
 #include "TVector2.h"
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
 //#include "/root/atlasstyle-00-03-05/AtlasStyle.h"
 //#include "/root/atlasstyle-00-03-05/AtlasStyle.C"
 //#include "/root/atlasstyle-00-03-05/AtlasUtils.h"
@@ -21,8 +17,17 @@
 
 #include <algorithm>
 #include <iostream>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <bitset>
+#include <bits/stdc++.h>
 
 void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool triggered){
+
+  gStyle->SetOptStat(0);
+
   //SetAtlasStyle();
   TString filename = address(address.Last('/')+1,address.Last('.')-address.Last('/')-1);
   TFile* f;
@@ -40,58 +45,126 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     tree = (TTree*)f->Get("_tree_event");
   if(!tree){ printf("Error: cannot find tree"); }
   const Int_t kMax = 5000;
-  unsigned int ntrack;
-  unsigned int nmc_truth;
-  float mc_truth_pt[kMax];
-  float mc_truth_eta[kMax];
-  float mc_truth_phi[kMax];
-  short mc_truth_pdg_code[kMax];
-  char mc_truth_charge[kMax];
-  float track_pt[kMax];
-  float track_eta[kMax];
-  float track_phi[kMax];
-  float track_dca_xy[kMax];
-  float track_dca_z[kMax];
-  float track_its_chi_square[kMax];
   
-  unsigned int ncluster;
-  float cluster_iso_its_04[kMax];
-  float cluster_iso_tpc_04[kMax];
-  float cluster_iso_04_truth[kMax];
-  float cluster_pt[kMax];
+  Double_t primary_vertex[3];
+  Bool_t is_pileup_from_spd_5_08;
+  int run_number;
 
-  char track_charge[kMax];
-  unsigned short track_mc_truth_index[kMax];
-  UChar_t track_its_ncluster[kMax];
-  unsigned char track_quality[kMax];
+  unsigned int ntrack;//
+  unsigned int nmc_truth;//
+  float mc_truth_pt[kMax];//
+  float mc_truth_eta[kMax];//
+  float mc_truth_phi[kMax];//
+  short mc_truth_pdg_code[kMax];//
+  char mc_truth_charge[kMax];//
+  float track_pt[kMax];//
+  float track_eta[kMax];//
+  float track_phi[kMax];//
+  float track_dca_xy[kMax];//
+  float track_dca_z[kMax];//
+  float track_its_chi_square[kMax];//
+  
+
+  UInt_t ncluster;
+  Float_t cluster_e[kMax];
+  Float_t cluster_e_cross[kMax];
+  Float_t cluster_pt[kMax];
+  Float_t cluster_eta[kMax];
+  Float_t cluster_phi[kMax];
+  Float_t cluster_iso_tpc_04[kMax];
+  Float_t cluster_iso_its_04[kMax];
+  Float_t cluster_iso_04_truth[kMax];
+  Float_t cluster_frixione_tpc_04_02[kMax];
+  Float_t cluster_frixione_its_04_02[kMax];
+  Float_t cluster_s_nphoton[kMax][4];
+  UChar_t cluster_nlocal_maxima[kMax];
+  Float_t cluster_distance_to_bad_channel[kMax];
+  
+  unsigned short cluster_mc_truth_index[kMax][32];
+  Int_t cluster_ncell[kMax];
+  UShort_t  cluster_cell_id_max[kMax];
+  Float_t cluster_lambda_square[kMax][2];
+  Float_t cell_e[17664];
+    
+  //Jets reco
+  UInt_t njet_ak04its;
+  Float_t jet_ak04its_pt_raw[kMax];
+  Float_t jet_ak04its_eta_raw[kMax];
+  Float_t jet_ak04its_phi_raw[kMax];
+  UInt_t njet_ak04tpc;
+  Float_t jet_ak04tpc_pt_raw[kMax];
+  Float_t jet_ak04tpc_eta_raw[kMax];
+  Float_t jet_ak04tpc_phi_raw[kMax];
+
+
+  char track_charge[kMax];//
+  unsigned short track_mc_truth_index[kMax];//
+  UChar_t track_its_ncluster[kMax];//
+  unsigned char track_quality[kMax];//
   ULong64_t trigger_mask[2];
 
-  tree->SetBranchAddress("ncluster",&ncluster);
-  tree->SetBranchAddress("nmc_truth",&nmc_truth);
-  tree->SetBranchAddress("mc_truth_pt",mc_truth_pt);
-  tree->SetBranchAddress("mc_truth_eta",mc_truth_eta);
-  tree->SetBranchAddress("mc_truth_phi",mc_truth_phi);
-  tree->SetBranchAddress("mc_truth_charge",mc_truth_charge);
-  tree->SetBranchAddress("mc_truth_pdg_code",mc_truth_pdg_code);
+  float eg_cross_section;//
+  int eg_ntrial;//
+  
+  tree->SetBranchAddress("primary_vertex", primary_vertex);
+  tree->SetBranchAddress("is_pileup_from_spd_5_08", &is_pileup_from_spd_5_08);
+  tree->SetBranchAddress("run_number", &run_number);
 
-  tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);
-  tree->SetBranchAddress("ntrack", &ntrack);    
-  tree->SetBranchAddress("track_pt",track_pt);
-  tree->SetBranchAddress("track_eta",track_eta);
-  tree->SetBranchAddress("track_phi",track_phi);
+  tree->SetBranchAddress("nmc_truth",&nmc_truth);//
+  tree->SetBranchAddress("mc_truth_pt",mc_truth_pt);//
+  tree->SetBranchAddress("mc_truth_eta",mc_truth_eta);//
+  tree->SetBranchAddress("mc_truth_phi",mc_truth_phi);//
+  tree->SetBranchAddress("mc_truth_charge",mc_truth_charge);//
+  tree->SetBranchAddress("mc_truth_pdg_code",mc_truth_pdg_code);//
+
+  tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);//
+  tree->SetBranchAddress("ntrack", &ntrack);//
+  tree->SetBranchAddress("track_pt",track_pt);//
+  tree->SetBranchAddress("track_eta",track_eta);//
+  tree->SetBranchAddress("track_phi",track_phi);//
   tree->SetBranchAddress("track_mc_truth_index", track_mc_truth_index);
-  tree->SetBranchAddress("track_quality", track_quality);
-  tree->SetBranchAddress("track_dca_xy", track_dca_xy);
-  tree->SetBranchAddress("track_dca_z", track_dca_z);
-  tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);
+  tree->SetBranchAddress("track_quality", track_quality);//
+  tree->SetBranchAddress("track_dca_xy", track_dca_xy);//
+  tree->SetBranchAddress("track_dca_z", track_dca_z);//
+  tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);//
   if(!isMC)
     tree->SetBranchAddress("trigger_mask", trigger_mask);
+  if(isMC)
+    {
+      cout << "Setting Xsection and trail branch address" << endl;
+      tree->SetBranchAddress("eg_cross_section",&eg_cross_section);//
+      tree->SetBranchAddress("eg_ntrial",&eg_ntrial);//
+    }
+
+  tree->SetBranchAddress("ncluster", &ncluster);
+  tree->SetBranchAddress("cluster_e", cluster_e);
+  tree->SetBranchAddress("cluster_e_cross", cluster_e_cross);
+  tree->SetBranchAddress("cluster_pt", cluster_pt); // here
+  tree->SetBranchAddress("cluster_eta", cluster_eta);
+  tree->SetBranchAddress("cluster_phi", cluster_phi);
+  tree->SetBranchAddress("cluster_s_nphoton", cluster_s_nphoton); // here
+  tree->SetBranchAddress("cluster_mc_truth_index", cluster_mc_truth_index);
+  tree->SetBranchAddress("cluster_lambda_square", cluster_lambda_square);
+  tree->SetBranchAddress("cluster_iso_tpc_04",cluster_iso_tpc_04);
+  tree->SetBranchAddress("cluster_iso_its_04",cluster_iso_its_04);
+  tree->SetBranchAddress("cluster_iso_04_truth", cluster_iso_04_truth);
+  tree->SetBranchAddress("cluster_frixione_tpc_04_02",cluster_frixione_tpc_04_02);
+  tree->SetBranchAddress("cluster_frixione_its_04_02",cluster_frixione_its_04_02);
+  tree->SetBranchAddress("cluster_nlocal_maxima", cluster_nlocal_maxima);        
+  tree->SetBranchAddress("cluster_distance_to_bad_channel", cluster_distance_to_bad_channel);
+  tree->SetBranchAddress("cluster_ncell", cluster_ncell);
+  tree->SetBranchAddress("cluster_cell_id_max", cluster_cell_id_max);
+  tree->SetBranchAddress("cell_e", cell_e);
   
 
-  tree->SetBranchAddress("cluster_iso_its_04",cluster_iso_its_04);
-  tree->SetBranchAddress("cluster_iso_tpc_04",cluster_iso_tpc_04);
-  tree->SetBranchAddress("cluster_iso_04_truth", cluster_iso_04_truth);
-  tree->SetBranchAddress("cluster_pt", cluster_pt); 
+  tree->SetBranchAddress("njet_ak04its", &njet_ak04its);
+  tree->SetBranchAddress("jet_ak04its_pt_raw", jet_ak04its_pt_raw);
+  tree->SetBranchAddress("jet_ak04its_eta_raw", jet_ak04its_eta_raw);
+  tree->SetBranchAddress("jet_ak04its_phi", jet_ak04its_phi_raw);
+  tree->SetBranchAddress("njet_ak04tpc", &njet_ak04tpc);
+  tree->SetBranchAddress("jet_ak04tpc_pt_raw", jet_ak04tpc_pt_raw);
+  tree->SetBranchAddress("jet_ak04tpc_eta_raw", jet_ak04tpc_eta_raw);
+  tree->SetBranchAddress("jet_ak04tpc_phi", jet_ak04tpc_phi_raw);
 
   const Double_t bins[10] = {  0.1,          0.16681005,   0.27825594,   0.46415888 ,  0.77426368, 1.29154967,   2.15443469,   3.59381366,   5.9948425,   10.0};
 
@@ -102,22 +175,24 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     5.256,   5.918,   6.663,   7.501,   8.445,   9.508,   10.705,  12.052,  13.569,  15.277,
     17.2,    19.365,  21.802,  24.546,  27.636,  31.114,  35.03,   39.439,  44.403,  49.992};//*/
 
-  //const Double_t bins_track[12] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0};//pPb
+  //const Double_t bins_track[13] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0};//pPb
+  //const Double_t bins_track[34] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 35.0, 40.0, 45.0, 50.0};//pPb
 
   //const Double_t bins_track[9] = {1.0,2.0,3.0,4.0,5.0,6.0,8.0,10.0, 13.0};//pp
 
-  const Double_t bins_track[37] = {
+  /*const Double_t bins_track[37] = {
     0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
     0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20,
     1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.20, 
-    3.60, 4.00, 5.00, 6.00, 8.00, 10.00, 13.00};//*/pp
+    3.60, 4.00, 5.00, 6.00, 8.00, 10.00, 13.00};//pp*/
 
-  /*const Double_t bins_track[49] = {
-    0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
-    0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20,
-    1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40,
-    2.60, 2.80, 3.00, 3.20, 3.40, 3.60, 3.80, 4.00, 4.50, 5.00,
-    5.50, 6.00, 6.50, 7.00, 8.00, 9.00, 10.00,11.00,12.00};//pPb*/
+  /*const Double_t bins_track[59] = {
+    0.15,  0.20,  0.25,  0.30,  0.35,  0.40,  0.45,  0.50,  0.55,  0.60, 
+    0.65,  0.70,  0.75,  0.80,  0.85,  0.90,  0.95,  1.00,  1.10,  1.20,
+    1.30,  1.40,  1.50,  1.60,  1.70,  1.80,  1.90,  2.00,  2.20,  2.40,
+    2.60,  2.80,  3.00,  3.20,  3.40,  3.60,  3.80,  4.00,  4.50,  5.00,
+    5.50,  6.00,  6.50,  7.00,  8.00,  9.00,  10.00, 11.00, 12.00, 13.00,
+    14.00, 15.00, 16.00, 18.00, 20.00, 22.00, 24.00, 26.00, 30.00};//pPb*/
 
   /*const Double_t bins_track[32] = {
     1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 
@@ -134,7 +209,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     etabins[i] = etamin + i*etastep;
   }
 
-  const int nbinsphi = 40;
+  const int nbinsphi = 80;
   Double_t phibins[nbinsphi+1] = {};
   double phimin = -1.0*TMath::Pi();
   double phimax = 1.0*TMath::Pi();
@@ -142,21 +217,45 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   for(int i=0; i<nbinsphi+1; i++){
     phibins[i] = phimin + i*phistep;
   }
+  
+  const int nbinstrack = 21;
+  /*Double_t trackbins[nbinstrack+1] = {
+    0.15,  0.20,  0.25,  0.30,  0.35,  0.40,  0.45,  0.50,  0.55,  0.60, 
+    0.65,  0.70,  0.75,  0.80,  0.85,  0.90,  0.95,  1.00,  1.10,  1.20,
+    1.30,  1.40,  1.50,  1.60,  1.70,  1.80,  1.90,  2.00,  2.20,  2.40,
+    2.60,  2.80,  3.00,  3.20,  3.40,  3.60,  3.80,  4.00,  4.50,  5.00,
+    5.50,  6.00,  6.50,  7.00,  8.00,  9.00,  10.00, 11.00, 12.00, 13.00,
+    14.00, 15.00, 16.00, 18.00, 20.00, 22.00, 24.00, 26.00, 30.00};//nbinsbstrack = 58*/
+  /*Double_t trackbins[nbinstrack+1] = {
+    0.15,  0.30,  0.50,  0.70,  0.90,  1.00,  1.50,  2.50,  3.00,  3.50,  
+    4.00,  4.50,  5.00,  5.50,  6.00,  6.50,  7.00,  8.00,  9.00,  10.00, 
+    11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 18.00, 20.00, 22.00, 24.00, 
+    26.00, 30.00};//nbinsbstrack = 32*/
+  Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0, 22.00, 24.00, 26.00, 30.00};//pPB nbinstrack = 21*/
+  //Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0, 8.0, 10.0, 13.0, 20.0};//pp bining nbinstrack = 9
+  /*Double_t trackbins[nbinstrack+1] = {};//{1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0};
+  double ptmin = 1;
+  double ptmax = 16;
+  double ptstep = (ptmax-ptmin)/nbinstrack;
+  for(int i = 0; i < nbinstrack+1; i++){
+    trackbins[i] = ptmin + i*ptstep;
+  }//*/
 
-  auto hCorrelation   = new TH2F("hCorrelation", "", 36, bins_track, 36, bins_track);
+  //tracks
+  auto hCorrelation   = new TH2F("hCorrelation", "", nbinstrack, trackbins, nbinstrack, trackbins);
   auto hRes_Pt   = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
-  auto hDen  = new TH1F("hDen", "", 36, bins_track);
-  auto hNum  = new TH1F("hNum","", 36, bins_track);
-  auto hNum2  = new TH1F("hNum2","", 36, bins_track);
-  auto hFake = new TH1F("hFake", "", 36, bins_track);
-  auto hReco = new TH1F("hReco","", 36,bins_track);
-  auto hTrack_pt = new TH1F("hTrack_pt","", 36, bins_track);
-  auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, 36, bins_track);
-  auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, 36, bins_track);
-  auto hEff2Deta = new TH2F("hEff2Deta","", nbinseta, etabins, 36, bins_track);
-  auto hNum2Dphi = new TH2F("hNum2Dphi","", nbinsphi, phibins, 36, bins_track);
-  auto hDen2Dphi = new TH2F("hDen2Dphi","", nbinsphi, phibins, 36, bins_track);
-  auto hEff2Dphi = new TH2F("hEff2Dphi","", nbinsphi, phibins, 36, bins_track);
+  auto hDen  = new TH1F("hDen", "", nbinstrack, trackbins);
+  auto hNum  = new TH1F("hNum","", nbinstrack, trackbins);
+  auto hNum2  = new TH1F("hNum2","", nbinstrack, trackbins);
+  auto hFake = new TH1F("hFake", "", nbinstrack, trackbins);
+  auto hReco = new TH1F("hReco","", nbinstrack,trackbins);
+  auto hTrack_pt = new TH1F("hTrack_pt","", nbinstrack, trackbins);
+  auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, nbinstrack, trackbins);
+  auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, nbinstrack, trackbins);
+  auto hEff2Deta = new TH2F("hEff2Deta","", nbinseta, etabins, nbinstrack, trackbins);
+  auto hNum2Dphi = new TH2F("hNum2Dphi","", nbinsphi, phibins, nbinstrack, trackbins);
+  auto hDen2Dphi = new TH2F("hDen2Dphi","", nbinsphi, phibins, nbinstrack, trackbins);
+  auto hEff2Dphi = new TH2F("hEff2Dphi","", nbinsphi, phibins, nbinstrack, trackbins);
  
   auto hNum2D = new TH2F("hNum2D","", nbinsphi, phibins, nbinseta, etabins);
   auto hDen2D = new TH2F("hDen2D","", nbinsphi, phibins, nbinseta, etabins);
@@ -187,458 +286,411 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   auto hTrue_eta  = new TH1F("hTrue_eta", "", nbinseta, etabins);
   auto hReco_eta  = new TH1F("hReco_eta", "", nbinseta, etabins);
   auto hEta  = new TH1F("hEta", "", nbinseta, etabins);
+  auto hEta_plus  = new TH1F("hEta_plus", "", nbinstrack,trackbins);
+  auto hEta_minus  = new TH1F("hEta_minus", "", nbinstrack,trackbins);
   auto hTrue_phi = new TH1F("hTrue_phi","", nbinsphi, phibins);
   auto hReco_phi = new TH1F("hReco_phi","", nbinsphi, phibins);
   auto hPhi = new TH1F("hPhi","", nbinsphi, phibins);
-
+  auto hReco2D = new TH2F("hReco2D","", nbinsphi, phibins, nbinseta, etabins);
+  
   auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
   auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
+  auto hEventCounts = new TH1F("hEventCounts","", 10, -0.5, 9.5);
+  auto hZvertex = new TH1F("hZvertez", "", 60, -30, 30);
 
-  //TH1D* hTrack_pt = new TH1F("hTrack_pt","", 10, bins_track);
   hFake->Sumw2();  
-  hDen->Sumw2();
-  hNum->Sumw2();
-  hNum2->Sumw2();
-  hTrue_eta->Sumw2();
   hTrack_pt->Sumw2();
+  hEta->Sumw2();
+  hPhi->Sumw2();
+  hZvertex->Sumw2();
+
+  hTrack_pt->SetTitle(";p_{T} GeV/c;dn/dp_{T}");
+  hEta->SetTitle(";#eta;counts");
+  hPhi->SetTitle(";#phi;counts");
+  hEta_plus->SetTitle(";#p_{T} [GeV/c];counts");
+  hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
+
+  //Photon
+  auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
+  auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
+  auto hEG1_E = new TH1F("hEG1_E", "", 55, 5, 60);//Jose, I have already declared the histograms
+  auto hEG2_E = new TH1F("hEG2_E", "", 55, 5, 60);
+  auto hMB_E = new TH1F("hMB_E", "", 55, 5, 60);
+
+  h_Reco->Sumw2();
+  hCluster_pt->Sumw2();
+  //Jose -> add Sumw2 to the trigger histograms
+
+  hCluster_pt->SetTitle("; p_{T} (GeV) ; dN/dp_{T}");
+  //Jose -> SetTitle to the trigger histograms. It will be the same title as hCluster_pt since we have same xy axis labels.
+  //Jets
+  auto h_jetpt_reco_its = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
+  auto h_jetEta_reco_its = new TH1F("h_jetEta_reco_its","", nbinseta, etabins);
+  auto h_jetPhi_reco_its = new TH1F("h_jetPhi_reco_its","", nbinsphi, phibins);
+  auto h_jet2D_reco_its = new TH2F("h_jet2D_reco_its","", nbinsphi, phibins, nbinseta, etabins);
+
+  h_jetpt_reco_its->Sumw2();
+  h_jetEta_reco_its->Sumw2();
+  h_jetPhi_reco_its->Sumw2();
+  h_jet2D_reco_its->Sumw2();
+
+  h_jetpt_reco_its->SetTitle(";p_{T}^{reco};1/N_{evt}dN/dp_{T}");
+  h_jetEta_reco_its->SetTitle(";#eta^{reco};counts");
+  h_jetPhi_reco_its->SetTitle(";#phi^{reco};counts");
+  h_jet2D_reco_its->SetTitle(";#phi^{reco};#eta^{reco}");
+
   int nevent = 0; 
+  int numEvents_tracks = 0;
+  int numEvents_clusters = 0;
+  int numEvents_clusters2 = 0;
   int numEvents = 0;
   //const int TrackBit = 16; //ITSONLY==16; ITS--TPC with full-jet cuts
 
   const double maxEta = 0.8;
+  const double jetptmin = 5.0;
   const bool doCutDCA = false; 
   const bool doCutChi2 = false;
 
   ULong64_t one1 = 1;
-  ULong64_t triggerMask_13f = (one1 << 2) | (one1 << 3);//minbias trigger
-  ULong64_t triggerMask_17p = (one1 << 1) | (one1 << 4);//minbais
-  ULong64_t trigMask = 0;
+ 
+  //17p triggers
+  ULong64_t triggerMask_17p[2];
+  triggerMask_17p[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);//minbais
+  triggerMask_17p[1] = (one1 << 11);//minbias
+
+  //17q triggers
+  ULong64_t triggerMask_17q_group1_MB[2];
+  triggerMask_17q_group1_MB[0] = (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 21) | (one1 << 22) | (one1 << 23) | (one1 << 24) | (one1 << 34);
+  triggerMask_17q_group1_MB[1] = 0;//minbias
+  ULong64_t triggerMask_17q_group1_EG2[2];
+  triggerMask_17q_group1_EG2[0] = (one1 << 14) | (one1 << 27);
+  triggerMask_17q_group1_EG2[1] = 0;//EG2 
+  ULong64_t triggerMask_17q_group2_MB[2];
+  triggerMask_17q_group2_MB[0]= (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 19) | (one1 << 20) | (one1 << 21) | (one1 << 22) | (one1 << 30);
+  triggerMask_17q_group1_MB[1] = 0;//minbias
+  ULong64_t triggerMask_17q_group2_EG2[2];
+  triggerMask_17q_group2_EG2[0] = (one1 << 12) | (one1 << 23);
+  triggerMask_17q_group2_EG2[1] = 0;//EG2
+  ULong64_t triggerMask_17q_group3_MB[2];
+  triggerMask_17q_group3_MB[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);
+  triggerMask_17q_group3_MB[1] = (one1 << 61);//minbais
+  ULong64_t triggerMask_17q_group3_EG2[2]; 
+  triggerMask_17q_group3_EG2[0] = (one1 << 10) | (one1 << 45);
+  triggerMask_17q_group3_EG2[1] = (one1 << 54);//EG2
+ 
+  //13bcdef triggers
+  ULong64_t triggerMask_13bc = (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 45) | (one1 << 46);//minbias 
+  ULong64_t triggerMask_13d = (one1 << 18) | (one1 << 19) | (one1 << 20) | (one1 << 21);
+  ULong64_t triggerMask_13ef = (one1 << 17) | (one1 << 18) | (one1 << 19) | (one1 << 20);
+  ULong64_t triggerMask_13d_MB = (one1 << 2) | (one1 << 3) | (one1 << 25) | (one1 << 26) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias 
+  ULong64_t triggerMask_13e_MB = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias
+  ULong64_t triggerMask_13f_MB = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias
+
+  ULong64_t trigMask[2] = {0};
   
-  if(filename(0,3) == "13f")
-    trigMask = triggerMask_13f;
+  if(filename(0,3) == "13b" || filename(0,3) == "13c")
+    trigMask[0] = triggerMask_13bc;
+  if(filename(0,3) == "13d")
+    trigMask[0] = triggerMask_13d_MB;  
+  if(filename(0,3) == "13f" || filename(0,3) == "13e")
+    trigMask[0] = triggerMask_13ef;
   if(filename(0,3) == "17p")
-    trigMask = triggerMask_17p;    
-      
-  Long64_t numEntries = 100000;//tree->GetEntries();
+    {trigMask[0] = triggerMask_17p[0]; trigMask[1] = triggerMask_17p[1];}   
+  //  if(filename(0,3) == "17q")
+  //  trigMask[0] = triggerMask_17q;
+
+  vector<int> vec17q_group1{282441, 282440, 282439, 282437, 284399, 282398, 282392, 282393, 282391};
+  vector<int> vec17q_group2{282415, 282411, 282402};
+  vector<int> vec17q_group3{282367, 282366};
+  ULong64_t trigMask_MB[2] = {0};
+  ULong64_t trigMask_EG1[2] = {0};
+  ULong64_t trigMask_EG2[2] = {0};
+
+  //cout << triggerMask_13bc << "\t" << trigMask << endl;
+  Long64_t totEvents = tree->GetEntries();
+  Long64_t restrictEvents = 100;
+  Long64_t numEntries = TMath::Min(totEvents,restrictEvents);
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
     nevent += 1;
-    if(nevent%1000==0) std::cout << nevent << std::endl;
+    if(nevent%10==0) //if(nevent%1000==0)
+      {
+	std::cout << nevent << std::endl;
+	cout << run_number << endl;
+      }
+
+    
     bool eventChange = true;
-    //Loop over all the tracks
-    int numTrack = 0;
-    for (int n = 0;  n< ntrack; n++){
-      
+    
+    //Event Selection:
+    if(not( TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
+    if(primary_vertex[2] == 0.000000) continue;
+    if(is_pileup_from_spd_5_08) continue; //removes pileup
+    //if(((trigMask[0] & trigger_mask[0]) == 0) && ((trigMask[1] & trigger_mask[1]) == 0)) continue; //trigger selection
+    hZvertex->Fill(primary_vertex[2]);
+    numEvents++;
+    int eventFill = 0;
+
+    //Loop over all the tracks    
+    for (int n=0; n< ntrack; n++){ 
       hTrackCut->Fill(0);
       if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
       if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
       if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
-      if(triggered)
-	{	  
-	  if((trigMask & trigger_mask[0]) == 0) continue; 
-	  hTrackCut->Fill(4);//trigger selection
-	  
-	}
-      if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(5);//its cluster chi^2 cut
+      if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(4);
       if(TrackBit == 16)
 	{
-	  if(track_its_ncluster[n] < 5) continue; 
-	  hTrackCut->Fill(6);//its cluster cut
+	  if(track_its_ncluster[n] < 4) continue; 
+	  hTrackCut->Fill(5);//its cluster cut
 	}
-      double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
-      if(TMath::Abs(track_dca_xy[n]) > 2.4) continue; hTrackCut->Fill(7);//distance of closest approach cut
-      if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(8);//distance of closest approach cut
+      //double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
+      if(TMath::Abs(track_dca_xy[n]) > 2.4) continue; hTrackCut->Fill(6);
+      if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(7);
       
-      numTrack++;
+      if(track_eta[n] > 0)
+	hEta_plus->Fill(track_pt[n]);
+      if(track_eta[n] < 0)
+	hEta_minus->Fill(track_pt[n]);
+      
+      eventFill = 1;
+      if (eventChange && !isMC) {numEvents_tracks++; eventChange = false;}
+
+      hReco->Fill(track_pt[n]);
       hTrack_pt->Fill(track_pt[n]);
+      
+      if(track_pt[n] < 1.0) continue;
       hEta->Fill(track_eta[n]);
       hPhi->Fill(track_phi[n]);
-      if (eventChange && !isMC) {numEvents++; eventChange = false;}
+      hReco2D->Fill(track_phi[n], track_eta[n]);
       
-
-      unsigned short index = track_mc_truth_index[n];
-      //int index = track_mc_truth_index[n];
-      if(index>65534) continue; //particles not associated with MC particle (i.e, secondaries or fakes)
-      if((TMath::Abs(mc_truth_pdg_code[index])!= 211)  && 
-	 (TMath::Abs(mc_truth_pdg_code[index])!=321) && 
-	 (TMath::Abs(mc_truth_pdg_code[index])!=2212)) continue;//*/
-      //if(int(mc_truth_charge[index])==0) continue;
-      //if(TMath::Abs(mc_truth_pdg_code[index])!= 211)  continue;
-
-      if (eventChange && isMC) {numEvents++; eventChange = false;}
-
-      hCorrelation->Fill(mc_truth_pt[index], track_pt[n]);
-      hRes_Pt->Fill(mc_truth_pt[index], 100*(track_pt[n]-mc_truth_pt[index])/(mc_truth_pt[index]));
-      
-      hNum->Fill(mc_truth_pt[index]);
-      hNum2->Fill(track_pt[n]);
-      //cout << track_pt[n] << "\t" << mc_truth_pt[index] << endl;
-      if(mc_truth_pt[index]>1.0)       
-	{
-	  hReco_eta->Fill(mc_truth_eta[index]);
-	  hReco_phi->Fill(mc_truth_phi[index]);
-	}
-      hNum2Deta->Fill(mc_truth_eta[index], mc_truth_pt[index]);
-      hNum2Dphi->Fill(mc_truth_phi[index], mc_truth_pt[index]);
-      hEff2Deta->Fill(track_pt[n]/mc_truth_pt[index],track_eta[n]/mc_truth_eta[index]);
-      hEff2Deta->Fill(track_pt[n]/mc_truth_pt[index],track_phi[n]/mc_truth_phi[index]);
-      hNum2D->Fill(mc_truth_phi[index], mc_truth_eta[index]);
-
-      hCorrelation_dEtapT->Fill(track_eta[n]-mc_truth_eta[index], mc_truth_pt[index]);
-      hCorrelation_dPhipT->Fill(track_phi[n]-mc_truth_phi[index], mc_truth_pt[index]);
-
-    }//end loop over tracks
-    
-    hNumTracks->Fill(numTrack);
-    
-    //Loop over MC particles (all are primaries), pick charged ones with |eta|<0.8
-    for (int nTru = 0;  nTru< nmc_truth; nTru++){
-        int pdgcode = mc_truth_pdg_code[nTru];
-        if((TMath::Abs(mc_truth_pdg_code[nTru])!= 211) && 
-	   (TMath::Abs(mc_truth_pdg_code[nTru])!=321) && 
-	   (TMath::Abs(mc_truth_pdg_code[nTru])!=2212)) continue;//*/
-	//if(int(mc_truth_charge[n])==0) continue;
-	//if(TMath::Abs(mc_truth_pdg_code[index])!= 211)  continue;
-        if(TMath::Abs(mc_truth_eta[nTru])> maxEta) continue; //skip particles with |eta|>0.8
-        hDen->Fill(mc_truth_pt[nTru]);
-	if(mc_truth_pt[nTru] > 1.0)
-	  {
-	    hTrue_eta->Fill(mc_truth_eta[nTru]);
-	    hTrue_phi->Fill(mc_truth_phi[nTru]);
-	  }
-	hDen2Deta->Fill(mc_truth_eta[nTru], mc_truth_pt[nTru]);
-        hDen2Dphi->Fill(mc_truth_phi[nTru], mc_truth_pt[nTru]);
-        hNum2D->Fill(mc_truth_phi[nTru], mc_truth_eta[nTru]);
-    }//end MC generated loop
-    
-    for (int n=0; n< ntrack; n++){ 
-      if(track_pt[n] < 0.15) continue;
-      if(TrackBit == 16)
-	{
-	  if(track_its_ncluster[n] < 5) continue; 
-	}
-      if((track_quality[n]&TrackBit)==0) continue;
-      double chi2 = track_its_chi_square[n]; 
-      if(chi2 >36) continue;
-      if(TMath::Abs(track_eta[n])> maxEta) continue;
-      double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
-      if(TMath::Abs(track_dca_xy[n]) > 2.4) continue;
-      if(TMath::Abs(track_dca_z[n]) > 3.2) continue;
-         
-      hReco->Fill(track_pt[n]);
-         
-      if(track_pt[n]>1.0){
-	hChi2->Fill(chi2);
-	hDCA_xy->Fill(track_dca_xy[n]);
-	hDCA_z->Fill(track_dca_z[n]);
-	hITSclus->Fill(int(track_its_ncluster[n]));
-      }
-      if(track_mc_truth_index[n]>65534){
-	hFake->Fill(track_pt[n]);   
-	if(track_pt[n]>1.0){
-	  hChi2_fake->Fill(chi2);
-	  hDCA_xy_fake->Fill(track_dca_xy[n]);
-	  hDCA_z_fake->Fill(track_dca_z[n]);
-	  hITSclus_fake->Fill(int(track_its_ncluster[n]));
-	}
-      }
     }//end ntrack loop
     
-      for(int n=0; n< ncluster; n++){
-        if(cluster_pt[n]<6) continue;
-	hIso_ITS->Fill(cluster_iso_its_04[n]);
-        hIso_TPC->Fill(cluster_iso_tpc_04[n]);
-        hIso_Truth->Fill(cluster_iso_04_truth[n]);
-      }
+    hEventCounts->Fill(eventFill);
 
+    bool eventChange2 = true;
+    //Loop over clusters
+    for(ULong64_t n=0; n< ncluster; n++)
+      {
+	if (eventChange2 && !isMC) {numEvents_clusters2++; eventChange2 = false;}
+	//cout << "in ncluster loop" << endl;
+
+	if(std::find(vec17q_group1.begin(), vec17q_group1.end(), run_number) != vec17q_group1.end())
+	  {
+	    //cout << "This was group one run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group1_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group1_MB[1];
+	  }
+	if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
+	  {
+	    //cout << "This was group three run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group2_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group2_MB[1];
+	  }
+	if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
+	  {
+	    //cout << "This was group three run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group3_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group3_MB[1];
+	  }
+
+	if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
+	  {
+	    hMB_E->Fill(cluster_e[n]);
+	  }
+	//Jose, make a smimilar if statment and fill for EG2 trigger and hEG2_E histogram
+	
+	//Photon Selection
+	//if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
+	if( not(cluster_ncell[n]>2)) continue;   //removes clusters with 1 or 2 cells
+	if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue; //removes "spiky" clusters
+	if( not(cluster_nlocal_maxima[n]<= 3)) continue; //require to have at most 2 local maxima.
+	//if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
+	
+	//Isolation and shower shape selection:
+	if( not(cluster_iso_its_04[n] < 1.5)) continue;
+	if( not(cluster_lambda_square[n][0]<0.27)) continue; //single-photon selection (as opposed to merged photon).
+	
+	
+	if (eventChange && !isMC) {numEvents_clusters++; eventChange = false;}
+
+	/*if(std::find(vec17q_group1.begin(), vec17q_group1.end(), run_number) != vec17q_group1.end())
+	  {
+	    cout << "This was group one run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group1_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group1_MB[1];
+	  }
+	if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
+	  {
+	    cout << "This was group three run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group2_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group2_MB[1];
+	  }
+	if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
+	  {
+	    cout << "This was group three run" << endl;
+	    trigMask_MB[0] = triggerMask_17q_group3_MB[0];
+	    trigMask_MB[1] = triggerMask_17q_group3_MB[1];
+	    }*/
+
+	
+	h_Reco->Fill(cluster_pt[n]);	
+	hCluster_pt->Fill(cluster_pt[n]);
+	hIso_ITS->Fill(cluster_iso_its_04[n]);
+	hIso_TPC->Fill(cluster_iso_tpc_04[n]);
+	hIso_Truth->Fill(cluster_iso_04_truth[n]);
+	
+      }
+    
+    //Loop over jets
+    for (ULong64_t ijet = 0; ijet < njet_ak04its; ijet++) {
+      if(not (jet_ak04its_pt_raw[ijet]>jetptmin)) continue;
+      if(not (TMath::Abs(jet_ak04its_eta_raw[ijet])  <0.5 ) ) continue;
+      h_jetpt_reco_its->Fill(jet_ak04its_pt_raw[ijet]);
+      h_jetEta_reco_its->Fill(jet_ak04its_eta_raw[ijet]);
+      h_jetPhi_reco_its->Fill(jet_ak04its_phi_raw[ijet]);
+      h_jet2D_reco_its->Fill(jet_ak04its_phi_raw[ijet], jet_ak04its_eta_raw[ijet]);
+    }
+    
   }//loop over events
   std::cout << " END LOOP  " << std::endl;
 
-   auto gausfit = new TF1("gaus","gaus", -25,25);
-   gausfit->SetLineColor(kRed);
-   auto g_mean = new TGraphErrors();
-   auto g_sigma = new TGraphErrors();
- 
-   auto c1 = new TCanvas();
-   
-   //Study of the ITS-only track pT resolution
-   int nbins = 9;
-   for(int i=0; i<nbins; i++){
-     double minpt = bins[i];
-     double maxpt = bins[i+1];
-     double binwidth = maxpt-minpt;
-     int minbin =  hRes_Pt->GetXaxis()->FindBin(minpt);
-     int maxbin =  hRes_Pt->GetXaxis()->FindBin(maxpt);
-     auto h1 = hRes_Pt->ProjectionY("h", minbin, maxbin);
-     
-     h1->SetTitle("; (p_{T}^{reco}-p_{T}^{true})/p_{T}^{true} [%] ; counts");
-     h1->Draw();  
-     h1->GetYaxis()->SetNdivisions(5);
-     h1->GetXaxis()->SetNdivisions(5);
-     h1->GetYaxis()->SetTitle("counts");
-     h1->Fit(gausfit,"R");
-     h1->SetTitle("; (p_{T}^{reco}-p_{T}^{true})/p_{T}^{true} [%] ; counts");
-     gausfit->Draw("same");
-     //myText(0.18, 0.8, kBlack, Form("%2.1f < p_{T}^{truth} < %2.1f GeV", minpt, maxpt));
-     //myText(0.18, 0.74, kRed, Form("#mu = %2.1f [%]", gausfit->GetParameter(1)));
-     //myText(0.18, 0.68, kRed, Form("#sigma = %2.1f [%]", gausfit->GetParameter(2))); 
-     g_sigma->SetPoint(g_sigma->GetN(), (maxpt+minpt)/2.0, gausfit->GetParameter(2));     
-     g_sigma->SetPointError(g_sigma->GetN()-1, binwidth/2.0, gausfit->GetParError(2));
-     g_mean->SetPoint(g_mean->GetN(), (maxpt+minpt)/2.0, gausfit->GetParameter(1));
-     g_mean->SetPointError(g_mean->GetN()-1, binwidth/2.0, gausfit->GetParError(1));
-     
-     c1->SaveAs(Form("PDFOUTPUT/projecting%i_TrackBit%i_%s.pdf", i, TrackBit,filename.Data()));
-   }
-
-   cout << numEvents << endl;
-   const double tot_eta = 1.6;
-   for(int i = 1; i < hTrack_pt->GetNbinsX()+1; i++)
-     {
-       double dpt = hTrack_pt->GetBinWidth(i);
-
-       double content = hTrack_pt->GetBinContent(i);
-       double temp = content/((double)numEvents*dpt*tot_eta);
-       hTrack_pt->SetBinContent(i, temp);
-
-       double error = hTrack_pt->GetBinError(i);
-       double tempErr = error/((double)numEvents*dpt*tot_eta);
-       hTrack_pt->SetBinError(i, tempErr);
-     }
-
-   for(int i = 1; i < hNum2->GetNbinsX()+1; i++)
-     {
-       double dpt = hNum2->GetBinWidth(i);
-       
-       double content = hNum2->GetBinContent(i);
-       double temp = content/((double)numEvents*dpt*tot_eta);
-       hNum2->SetBinContent(i, temp);
-
-       double error = hNum2->GetBinError(i);
-       double tempErr = error/((double)numEvents*dpt*tot_eta);
-       hNum2->SetBinError(i, tempErr);
-     }
-   
-   auto p1 = new TF1("p1","[0] + [1]*x", 0.50, 10.0);
-   p1->SetLineColor(kRed);   
-   g_sigma->SetTitle("Relative resolution vs p_{T} ; p_{T}^{true} [GeV]; #sigma(p_{T})/p_{T} [%]"); 
-   g_mean->SetTitle("; p_{T}^{true} [GeV]; Relative bias [%]");
-   hCorrelation->SetTitle("; True p_{T} [GeV]; Reconstructed p_{T} [GeV]");
-   hCorrelation_dEtapT->SetTitle("; #eta^{truth}-#eta^{reco}; p_{T}^{true} [GeV]");
-   hCorrelation_dPhipT->SetTitle("; #phi^{truth}-#phi^{reco}; p_{T}^{true} [GeV]");
-
-   auto c = new TCanvas();   
+  auto gausfit = new TF1("gaus","gaus", -25,25);
+  gausfit->SetLineColor(kRed);
+  auto g_mean = new TGraphErrors();
+  auto g_sigma = new TGraphErrors();
   
-   filename += "_fullppBins_13gevRange_changeTrig";
-   auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");
-   //   
-   hDen->SetTitle("; p_{T}^{reco} [GeV]; entries");
-   hDen->SetLineColor(1);
-   hFake->SetLineColor(kRed);
-   hDen->Draw("hist");
-   hFake->Draw("histsame");
-   gPad->SetLogy(1);
-   gPad->SetLogx(1);
-   //hDen->SetMinimum(hDen->GetMinimum()/100.0);
-   //myText(0.18, 0.96, kBlack, "All tracks");
-   //myText(0.18, 0.92, kRed, "Unmatched tracks");
-   c->SaveAs(Form("PDFOUTPUT/FakeRateDistributions_%i_%s.pdf",TrackBit,filename.Data()));
-   gPad->SetLogy(0);
-   gPad->SetLogx(0);
-   c->Clear();
-
-   hChi2->SetTitle("; ITS #chi^{2} ; counts"); 
-   hChi2->Draw();
-   //myText(0.18, 0.96, kBlack, "All tracks");
-   //myText(0.18, 0.92, kRed, "Unmatched tracks");
-   //myText(0.18, 0.92, kBlack, "p_{T}>1 GeV");
-   hChi2_fake->SetLineColor(2);
-   hChi2_fake->Draw("same");
-   gPad->SetLogy(kTRUE);
-   //gPad->SetLogx(kTRUE);
-   c->SaveAs(Form("PDFOUTPUT/Chi2_%i_%s.pdf",TrackBit,filename.Data()));
-   c->Clear();
-   gPad->SetLogx(kFALSE);
+  auto c1 = new TCanvas();
+   
+  //Study of the ITS-only track pT resolution
+  int nbins = 9;
+  for(int i=0; i<nbins; i++){
+    double minpt = bins[i];
+    double maxpt = bins[i+1];
+    double binwidth = maxpt-minpt;
+    int minbin =  hRes_Pt->GetXaxis()->FindBin(minpt);
+    int maxbin =  hRes_Pt->GetXaxis()->FindBin(maxpt);
+    auto h1 = hRes_Pt->ProjectionY("h", minbin, maxbin);
+    
+    h1->SetTitle("; (p_{T}^{reco}-p_{T}^{true})/p_{T}^{true} [%] ; counts");
+    h1->Draw();  
+    h1->GetYaxis()->SetNdivisions(5);
+    h1->GetXaxis()->SetNdivisions(5);
+    h1->GetYaxis()->SetTitle("counts");
+    h1->Fit(gausfit,"R");
+    h1->SetTitle("; (p_{T}^{reco}-p_{T}^{true})/p_{T}^{true} [%] ; counts");
+    gausfit->Draw("same");
+    //myText(0.18, 0.8, kBlack, Form("%2.1f < p_{T}^{truth} < %2.1f GeV", minpt, maxpt));
+    //myText(0.18, 0.74, kRed, Form("#mu = %2.1f [%]", gausfit->GetParameter(1)));
+    //myText(0.18, 0.68, kRed, Form("#sigma = %2.1f [%]", gausfit->GetParameter(2))); 
+    g_sigma->SetPoint(g_sigma->GetN(), (maxpt+minpt)/2.0, gausfit->GetParameter(2));     
+    g_sigma->SetPointError(g_sigma->GetN()-1, binwidth/2.0, gausfit->GetParError(2));
+    g_mean->SetPoint(g_mean->GetN(), (maxpt+minpt)/2.0, gausfit->GetParameter(1));
+    g_mean->SetPointError(g_mean->GetN()-1, binwidth/2.0, gausfit->GetParError(1));
+    
+    //c1->SaveAs(Form("PDFOUTPUT/projecting%i_TrackBit%i_%s.pdf", i, TrackBit,filename.Data()));
+  }
+  
+  
+  //Normalizing the bins and getting yaxsis to be 1/Nevt*dN/dptdeta
+  cout << numEvents_tracks << endl;
+  cout << filename(0,3) << "\tTotal Events: " << numEntries << "\tEvent selection: " << numEvents << "\tPre-Cluster selection: " << numEvents_clusters2 << "\tPostCluster selection: " << numEvents_clusters << endl;
+  const double tot_eta = 1.6;
+  for(int i = 1; i < hTrack_pt->GetNbinsX()+1; i++)
+    {
+      double dpt = hTrack_pt->GetBinWidth(i);
+      //cout << dpt << endl;
+      double content = hTrack_pt->GetBinContent(i);
+      double temp = content/((double)numEvents*dpt*tot_eta);
+      //double temp = content/dpt;
+      hTrack_pt->SetBinContent(i, temp);
       
-   hFake->SetTitle("; p_{T}^{reco} [GeV]; Fake Rate");
-   hFake->Write("hFake");
-   hFake->Divide(hReco);
-   hFake->Write("FakeRate");
-   //   hReco->Write("hReco");
-   g_sigma->Write("g_sigma");
-   g_mean->Write("g_mean");
+      double error = hTrack_pt->GetBinError(i);
+      double tempErr = error/((double)numEvents*dpt*tot_eta);
+      //double tempErr = error/dpt;
+      hTrack_pt->SetBinError(i, tempErr);
+    }
+  
+  //scaling the jets
+  for(int i = 1; i < h_jetpt_reco_its->GetNbinsX()+1; i++)
+    {
+      double dpt = h_jetpt_reco_its->GetBinWidth(i);
 
-   hDen->SetTitle("; p_{T}^{true} [GeV/c]; entries");
-   hNum->SetTitle("; p_{T}^{Reco,Embed} [GeV/c]; entries");
-   hNum2->SetTitle("; p_{T}^{Reco} [GeV/c]; entries");
-   hDen->Write("hTruth");
-   hNum->Write("hRecoEmbed");
-   hNum2->Write("hReco");
+      double content = h_jetpt_reco_its->GetBinContent(i);
+      double temp = content/((double)numEvents*dpt*tot_eta);
+      h_jetpt_reco_its->SetBinContent(i, temp);
+      
+      double error = h_jetpt_reco_its->GetBinError(i);
+      double tempErr = error/((double)numEvents*dpt*tot_eta);
+      h_jetpt_reco_its->SetBinError(i, tempErr);
+    }
 
+  
+  auto c = new TCanvas();   
+  
+  //Jose: change the filename so that it describes what you are filling in, i.e. _pp_trigHists_100Kevents etc.Do not use "_junk" that is for testing only.
+  //filename += "_pPb_1GeV30GeV_trig_pileup__zv_jets";
+  filename += "junk_pPb_trig_pileup__zv_jets_1M";
+  //filename += "_pp_minBiasTrigg_Allevents";
+  auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");//Jose: make sure to have a directory called "OutputData"
+  //   
+    
+  hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
+  hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
+  hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
+  hTrackCut->GetXaxis()->SetBinLabel(4,"pt cut");
+  hTrackCut->GetXaxis()->SetBinLabel(5,"ITS #chi^{2} cut");
+  hTrackCut->GetXaxis()->SetBinLabel(6,"ITS nCluster cut");
+  hTrackCut->GetXaxis()->SetBinLabel(7,"DCAr cut");
+  hTrackCut->GetXaxis()->SetBinLabel(8,"DCAz cut");
 
-   //Writing efficiency
-   hNum2Deta->Write("hNum2Deta");
-   hDen2Deta->Write("hDen2Deta");
-   hNum2Deta->SetMaximum(1.0);
-   hNum2Deta->Divide(hDen2Deta);
-   hNum2Deta->SetMinimum(0.0);
-   hNum2Deta->Write("hEff2Deta");
+  
+  hEventCounts->GetXaxis()->SetBinLabel(1, "Passing Event Selection only");
+  hEventCounts->GetXaxis()->SetBinLabel(2, "Passing Track Selection");
 
-   hNum2Dphi->Write("hNum2Dphi");
-   hDen2Dphi->Write("hDen2Dphi");
-   hNum2Dphi->Divide(hDen2Dphi);
-   hNum2Dphi->SetMaximum(1.0);
-   hNum2Dphi->SetMinimum(0.0);
-   hNum2Dphi->Write("hEff2Dphi");
-
-     
-   hCorrelation_dEtapT->Write("dEta_pt");
-   hCorrelation_dPhipT->Write("dPhi_pt");
-   hCorrelation->Write();
-
-   hTrue_eta->Write("hTrue_eta");
-   hReco_eta->Write("hReco_eta");
-   hTrue_phi->Write("hTrue_phi");
-   hReco_phi->Write("hReco_phi");
-   hReco_eta->Divide(hTrue_eta);
-   hReco_eta->Write("hEff_eta");
-   hReco_phi->Divide(hTrue_phi);
-   hReco_phi->Write("hEff_phi");
-
-   hTrack_pt->SetTitle(";p_{T} GeV/c;dn/dp_{T}");
-   hTrack_pt->Write("track_pt");
-   hEta->SetTitle(";#eta;counts");
-   hEta->Write("hEta");
-   hPhi->SetTitle(";#phi;counts");
-   hPhi->Write("hPhi");
-     
-   hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
-   hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
-   hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
-   hTrackCut->GetXaxis()->SetBinLabel(4,"pt cut");
-   hTrackCut->GetXaxis()->SetBinLabel(5,"Trigger cut");
-   hTrackCut->GetXaxis()->SetBinLabel(6,"ITS nCluster cut");
-   hTrackCut->GetXaxis()->SetBinLabel(7,"ITS #chi^{2} cut");
-   hTrackCut->GetXaxis()->SetBinLabel(8,"DCAr cut");
-   hTrackCut->GetXaxis()->SetBinLabel(9,"DCAz cut");
-   hTrackCut->Write("hTrackCut");
-
-   hNumTracks->SetTitle("Number of tracks passing all cuts;Number of Tracks; Counts");
-   hNumTracks->Write("hNumTracks");
-
-   TGraphAsymmErrors* eff = new TGraphAsymmErrors(hNum, hDen);
-   eff->SetTitle("; p_{T}^{true} ; #epsilon");
-   eff->Write("Efficiency");
-   fout->Close();
-
-   hCorrelation_dEtapT->Draw("colz");
-   gPad->SetLogz();
-   hCorrelation_dEtapT->GetYaxis()->SetNdivisions(8);
-   hCorrelation_dEtapT->GetXaxis()->SetNdivisions(10);
-   c->SaveAs(Form("PDFOUTPUT/Correlation_deta_pt%i_%s.pdf",TrackBit,filename.Data()));
-
-   c->Clear();
-   hITSclus->Draw("hist");
-   hITSclus_fake->Draw("histsame");
-   hITSclus_fake->SetLineColor(2);
-   //myText(0.18, 0.96, kRed, "All tracks");
-   //myText(0.18, 0.92, kBlack, "Unmatched tracks");
-   //myText(0.18, 0.82, kBlack, "p_{T}>1 GeV");
- 
-
-   gPad->SetLogy(kTRUE);
-   c->SaveAs(Form("PDFOUTPUT/ITSnCluster_%i_%s.pdf",TrackBit,filename.Data()));
-   c->Clear();
-
-   
-   hDCA_xy->SetTitle("; d_{0} [mm]; counts");
-   hDCA_xy->Draw();
-   hDCA_xy_fake->SetLineColor(kRed);
-   hDCA_xy_fake->Draw("same");
-   gPad->SetLogy();
-   //myText(0.18, 0.96, kBlack, "All tracks");
-   //myText(0.18, 0.92, kRed, "Unmatched tracks");
-   //myText(0.18, 0.82, kBlack, "p_{T}>1 GeV");
-   c->SaveAs(Form("PDFOUTPUT/DCA_xy%i_%s.pdf",TrackBit,filename.Data()));
-   gPad->SetLogy(0);
-   c->Clear();
-
-   hIso_ITS->SetTitle("; #Sigma_{R<0.4} p_{T} [GeV]; counts ");
-   hIso_ITS->Draw("hist");
-   //myText(0.18, 0.96, kRed, "ITS-only");
-   //myText(0.18, 0.92, kBlack, "ITS+TPC");
-   //myText(0.68, 0.85, kBlack, "p_{T}^{cluster} > 6 GeV");
-   hIso_TPC->SetLineColorAlpha(2,0.5);
-   hIso_TPC->Draw("histsame");
-   //hIso_Truth->SetLineColorAlpha(4,0.5);
-   // hIso_Truth->Draw("histsame");
-   gPad->SetLogy(0); 
-   c->SaveAs(Form("PDFOUTPUT/Iso%s.pdf",filename.Data()));
-   c->Clear();
-
-   hIso_Truth->Draw("hist");
-   c->SaveAs(Form("PDFOUTPUT/IsoTrue%s.pdf",filename.Data()));
-   c->Clear();
+  //writing tracking stuff
+  // hTrack_pt->Write("hReco");
+  // hEta->Write("hReco_eta");
+  // hPhi->Write("hReco_phi");
+  // hReco2D->Write("hReco_phiEta");
+  // hEta_plus->Write("hPt_plusEta");
+  // hEta_minus->Write("hPt_minusEta");
+  // hTrackCut->Write("hTrackCut");
+  
+  //writing photon info
+  hCluster_pt->Write("cluster_pt");
+  hEventCounts->Write("hEventCounts");
+  hMB_E->Write("hMB_E");//Jose, write out EG2 histogram to file. The name in the pathenthesis is what you will call when you use the file in python. 
+  
+  // hZvertex->Write("hZvertex");
 
 
-   hDCA_z->SetTitle("; z_{0} [cm] ; counts");
-   hDCA_z->Draw();
-   hDCA_z_fake->SetLineColor(kRed);
-   hDCA_z_fake->Draw("same");
-   gPad->SetLogy(kTRUE);
-   //myText(0.18, 0.96, kBlack, "All tracks");
-   //myText(0.18, 0.92, kRed, "Unmatched tracks");
-   //myText(0.18, 0.82, kBlack, "p_{T}>1 GeV");
-   c->SaveAs(Form("PDFOUTPUT/DCA_z%i_%s.pdf",TrackBit,filename.Data()));
-   gPad->SetLogy(kFALSE);
-
-
-   hCorrelation_dPhipT->Draw("colz");
-   gPad->SetLogz();
-   hCorrelation_dPhipT->GetYaxis()->SetNdivisions(8);
-   hCorrelation_dPhipT->GetXaxis()->SetNdivisions(10);
-   c->SaveAs(Form("PDFOUTPUT/Correlation_dphi_pt%i_%s.pdf",TrackBit,filename.Data()));
-   
-   c->Clear();
-   hCorrelation->Draw("colz");
-   gPad->SetLogz();
-   hCorrelation->GetYaxis()->SetNdivisions(5);
-   hCorrelation->GetXaxis()->SetNdivisions(5);
-   c->SaveAs(Form("PDFOUTPUT/MomentumCorrelation_dphi_pt%i_%s.pdf",TrackBit,filename.Data()));
-
-   c->Clear();
-   hNum2Deta->Draw("colz");
-   hNum2Deta->SetTitle("; #eta^{true} ; p_{T}^{true} [GeV]");
-   gPad->SetLogz(0);
-   gPad->SetLogy(1);
-   c->SaveAs(Form("PDFOUTPUT/Eff_Eta_%i_%s.pdf",TrackBit,filename.Data()));
-   c->Clear();
-   hNum2Dphi->Draw("colz");
-   hNum2Dphi->SetTitle("; #phi^{true} ; p_{T}^{true} [GeV]");
-   gPad->SetLogz(0);
-   gPad->SetLogy(1);
-   c->SaveAs(Form("PDFOUTPUT/Eff_phi_%i_%s.pdf",TrackBit,filename.Data()));
-
-   c->Clear();
-   gPad->SetLogy(0);
-   g_sigma->Draw("AP");
-   c->SaveAs(Form("PDFOUTPUT/ResolutionPT_%i_%s.pdf",TrackBit,filename.Data()));
-
-   c->Clear();
-   eff->Draw("AP");
-   eff->SetMaximum(1.0);
-   eff->SetMinimum(0.0);
-   gPad->SetLogx(1);
-   c->SaveAs(Form("PDFOUTPUT/Efficiency_%i_%s.pdf",TrackBit,filename.Data()));
-
-   c->Clear();
-   hFake->Draw();
-   hFake->SetTitle("; p_{T}^{reco} [GeV]; Fake Rate");
-   c->SaveAs(Form("PDFOUTPUT/FakeRate_%i_%s.pdf",TrackBit,filename.Data()));
-   
-   c->Clear();
-   c->Close();
-   c1->Close();
+  //Writing out jet info
+  //h_jetpt_reco_its->Write("hReco");
+  //h_jetEta_reco_its->Write("hReco_eta");
+  //h_jetPhi_reco_its->Write("hReco_phi");
+  //h_jet2D_reco_its->Write("hReco_phiEta");
+  fout->Close();
+  
+  
+  hIso_ITS->SetTitle("; #Sigma_{R<0.4} p_{T} [GeV]; counts ");
+  hIso_ITS->Draw("hist");
+  //myText(0.18, 0.96, kRed, "ITS-only");
+  //myText(0.18, 0.92, kBlack, "ITS+TPC");
+  //myText(0.68, 0.85, kBlack, "p_{T}^{cluster} > 6 GeV");
+  hIso_TPC->SetLineColorAlpha(2,0.5);
+  hIso_TPC->Draw("histsame");
+  //hIso_Truth->SetLineColorAlpha(4,0.5);
+  // hIso_Truth->Draw("histsame");
+  gPad->SetLogy(0); 
+  //c->SaveAs(Form("PDFOUTPUT/Iso%s.pdf",filename.Data()));
+  c->Clear();
+  
+  hIso_Truth->Draw("hist");
+  c->SaveAs(Form("PDFOUTPUT/IsoTrue%s.pdf",filename.Data()));
+  c->Clear();
+  c->Close();
+  c1->Close();
   
 }
 
@@ -664,39 +716,75 @@ void efficiencyCalculation(){
 
   ////////////////////////////////MC////////////////////////////////////
 
-  //Run(3, "MC/17g6a3_pthat2_clusterv2_small", true, false, false);
-  //Run(16, "MC/17g6a3_pthat2_clusterv2_small", true, false, false);
+  //Run(3, "MC/17g6a3/17g6a3_pthat2_clusterv2_small", true, false, false);
+  //Run(16, "MC/17g6a3/17g6a3_pthat2_clusterv2_small", true, false, false);
   
-  //Run(3, "MC/17g6a3_pthat2_latest", true, true, false);
-  //Run(16, "MC/17g6a3_pthat2_latest", true, true, false);
+  //Run(3, "MC/17g6a3/17g6a3_pthat2_latest.root", true, true, false);
+  //Run(16, "MC/17g6a3/17g6a3_pthat2_latest.root", true, true, false);
   
-  //Run(3, "MC/17g6a3_pthat6_v2_noClusCut", true, true, false);
-  //Run(16, "MC/17g6a3_pthat6_v2_noClusCut", true, true, false);
+  //Run(3, "MC/17g6a3/17g6a3_pthat6_v2_noClusCut.root", true, true, false);
+  //Run(16, "MC/17g6a3/17g6a3_pthat6_v2_noClusCut.root", true, true, false);
+  
+  //Run(16, "MC/16c3c/16c3c_pthat2_v1.root", true, true, false);
+  //Run(16, "MC/16c3c/16c3c_pthat3_v1.root", true, true, false);
+  //Run(16, "MC/16c3c/16c3c_pthat6_v1.root", true, true, false);
+  
+  //Run(3, "MC/18b10a/18b10a_calo_pthat2.root", true, true, false);
+  //Run(16, "MC/18b10a/18b10a_calo_pthat2.root", true, true, false);
 
-  Run(3, "MC/18b10a_calo_pthat2.root", true, true, false);
-  Run(16, "MC/18b10a_calo_pthat2.root", true, true, false);
-
-  //Run(3, "MC/18b10b_calo_pthat2.root", true, true, false);
-  //Run(16, "MC/18b10b_calo_pthat2.root", true, true, false);
+  //Run(3, "MC/18b10b/18b10b_calo_pthat2.root", true, true, false);
+  //Run(16, "MC/18b10b/18b10b_calo_pthat2.root", true, true, false);
 
   //////////////////////////////////Data///////////////////////////////////////
   //Run(3, "pPb/13b/13b_pass4_v2_1run", false, true, false);
-  //Run(16, "pPb/13b/13b_pass4_v2_1run", false, true, false);
+  //Run(16, "pPb/13b/13b_pass4_v2_1run.root", false, true, false);
   
-  //Run(3, "pPb/13f/13b_pass4_v2_3run", false, true, false);
-  //Run(16, "pPb/13f/13b_pass4_v2_3run", false, true, false);
+  //Run(3, "pPb/13b/13b_pass4_v2_3run.root", false, true, false);
+  //Run(16, "pPb/13b/13b_pass4_v2_3run.root", false, true, false);
   
+  //Run(3, "pPb/13b/13b_pass4_v1_3run.root", false, true, false);
+  //Run(3, "pPb/13b/13b_pass4_v1_5run.root", false, true, false);
+  //Run(16, "pPb/13b/13b_pass4_v1_5run.root", false, true, false);
+  //Run(16, "pPb/13b/13b_trigTest.root", false, true, false);
+  //Run(16, "pPb/13d/13d_trigTest.root", false, true, true);
+  //Run(3, "pPb/13b/13b_3run.root", false, true, false);
+  //Run(16, "pPb/13b/13b_3run.root", false, true, false);
+  //Run(3, "pPb/13b/13b.root", false, true, false);
+  //Run(16, "pPb/13b/13b.root", false, true, false);
+
   //Run(3, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);
   //Run(16, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);
   
   //Run(3, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
   //Run(16, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
+
+  //Run(16, "pPb/13d/13d.root", false, true, true);
+  //Run(16, "pPb/13e/13e.root", false, true, true);
+  //Run(16, "pPb/13f/13f.root", false, true, true);
+  //Run(16, "pPb/13def.root", false, true, true);
     
   //Run(3, "pPb/13c/13c_pass4_v2", false, true, false);
   //Run(16, "pPb/13c/13c_pass4_v2", false, true, false);
   
-  Run(3, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
-  Run(16, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
+  //Run(3, "pPb/13c/13c_pass4_v1_0GevtrackSkim.root", false, true, false);
+  //Run(16, "pPb/13c/13c_pass4_v1_0GevtrackSkim.root", false, true, false);
+
+  //Run(3, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
+  //Run(16, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
+
+  //Run(3, "pp/17p/17p_CENT_wSDD_MB_v1_mini.root", false, true, true);
+  //Run(16, "pp/17p/17p_CENT_wSDD_MB_v1_mini.root", false, true, true);
+  //Run(16, "pp/17p/17p_CENT_wSDD_MB_v1.root", false, true, true);
+  //Run(3, "pp/17p/17p_CENT_wSDD_v1_2run.root", false, true, true);
+  //Run(16, "pp/17p/17p_CENT_wSDD_v1_2run.root", false, true, true);
+  //Run(16, "pp/17p/17p.root", false, true, true);
+
+
+  //Run(3, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
+  //Run(16, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
+  Run(16, "pp/17q/17q_wSDD.root", false, true, true);
+
+
 
   return;
 }
