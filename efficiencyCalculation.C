@@ -317,12 +317,17 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   auto hEG2_E = new TH1F("hEG2_E", "", 55, 5, 60);
   auto hMB_E = new TH1F("hMB_E", "", 55, 5, 60);
 
-  h_Reco->Sumw2();
-  hCluster_pt->Sumw2();
-  //Jose -> add Sumw2 to the trigger histograms
+    h_Reco->Sumw2();
+    hCluster_pt->Sumw2();
+    hEG1_E->Sumw2();
+    hEG2_E->Sumw2();
+    hMB_E->Sumw2();
 
-  hCluster_pt->SetTitle("; p_{T} (GeV) ; dN/dp_{T}");
-  //Jose -> SetTitle to the trigger histograms. It will be the same title as hCluster_pt since we have same xy axis labels.
+    hCluster_pt->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    hEG1_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    hEG2_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    hMB_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    
   //Jets
   auto h_jetpt_reco_its = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
   auto h_jetEta_reco_its = new TH1F("h_jetEta_reco_its","", nbinseta, etabins);
@@ -367,7 +372,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   triggerMask_17q_group1_EG2[1] = 0;//EG2 
   ULong64_t triggerMask_17q_group2_MB[2];
   triggerMask_17q_group2_MB[0]= (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 19) | (one1 << 20) | (one1 << 21) | (one1 << 22) | (one1 << 30);
-  triggerMask_17q_group1_MB[1] = 0;//minbias
+  triggerMask_17q_group2_MB[1] = 0;//minbias
   ULong64_t triggerMask_17q_group2_EG2[2];
   triggerMask_17q_group2_EG2[0] = (one1 << 12) | (one1 << 23);
   triggerMask_17q_group2_EG2[1] = 0;//EG2
@@ -480,24 +485,38 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	    //cout << "This was group one run" << endl;
 	    trigMask_MB[0] = triggerMask_17q_group1_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group1_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
 	  }
 	if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
 	  {
 	    //cout << "This was group three run" << endl;
 	    trigMask_MB[0] = triggerMask_17q_group2_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group2_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
+
 	  }
 	if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
 	  {
 	    //cout << "This was group three run" << endl;
 	    trigMask_MB[0] = triggerMask_17q_group3_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group3_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
 	  }
 
 	if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
 	  {
 	    hMB_E->Fill(cluster_e[n]);
 	  }
+          if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
+          {
+              hEG2_E->Fill(cluster_e[n]);
+          }
 	//Jose, make a smimilar if statment and fill for EG2 trigger and hEG2_E histogram
 	
 	//Photon Selection
@@ -630,7 +649,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   
   //Jose: change the filename so that it describes what you are filling in, i.e. _pp_trigHists_100Kevents etc.Do not use "_junk" that is for testing only.
   //filename += "_pPb_1GeV30GeV_trig_pileup__zv_jets";
-  filename += "junk_pPb_trig_pileup__zv_jets_1M";
+  filename += "_minbias_pp_new_TriggHists_Allevents";
   //filename += "_pp_minBiasTrigg_Allevents";
   auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");//Jose: make sure to have a directory called "OutputData"
   //   
@@ -660,7 +679,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   //writing photon info
   hCluster_pt->Write("cluster_pt");
   hEventCounts->Write("hEventCounts");
-  hMB_E->Write("hMB_E");//Jose, write out EG2 histogram to file. The name in the pathenthesis is what you will call when you use the file in python. 
+  hMB_E->Write("hMB_E");
+    hEG2_E->Write("hEG2_E");
+    //Jose, write out EG2 histogram to file. The name in the pathenthesis is what you will call when you use the file in python.
   
   // hZvertex->Write("hZvertex");
 
@@ -782,7 +803,7 @@ void efficiencyCalculation(){
 
   //Run(3, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
   //Run(16, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
-  Run(16, "pp/17q/17q_wSDD.root", false, true, true);
+  Run(16, "pp/17q/17q_CENT_wSDD_3run_forTrig.root", false, true, true);
 
 
 
