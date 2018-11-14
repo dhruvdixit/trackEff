@@ -311,11 +311,11 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
 
   //Photon
-  auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
-  auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
-  auto hEG1_E = new TH1F("hEG1_E", "", 55, 5, 60);//Jose, I have already declared the histograms
-  auto hEG2_E = new TH1F("hEG2_E", "", 55, 5, 60);
-  auto hMB_E = new TH1F("hMB_E", "", 55, 5, 60);
+  auto h_Reco  = new TH1F("h_Reco","", 59, 1, 60);
+  auto hCluster_pt = new TH1F("hCluster_pt", "", 59, 1, 60);
+  auto hEG1_E = new TH1F("hEG1_E", "", 59, 1, 60);//Jose, I have already declared the histograms
+  auto hEG2_E = new TH1F("hEG2_E", "", 59, 1, 60);
+  auto hMB_E = new TH1F("hMB_E", "", 59, 1, 60);
 
     h_Reco->Sumw2();
     hCluster_pt->Sumw2();
@@ -414,7 +414,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   //cout << triggerMask_13bc << "\t" << trigMask << endl;
   Long64_t totEvents = tree->GetEntries();
   Long64_t restrictEvents = 100;
-  Long64_t numEntries = TMath::Min(totEvents,restrictEvents);
+  Long64_t numEntries = tree->GetEntries();
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
@@ -680,7 +680,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hCluster_pt->Write("cluster_pt");
   hEventCounts->Write("hEventCounts");
   hMB_E->Write("hMB_E");
-    hEG2_E->Write("hEG2_E");
+  hEG2_E->Write("hEG2_E");
     //Jose, write out EG2 histogram to file. The name in the pathenthesis is what you will call when you use the file in python.
   
   // hZvertex->Write("hZvertex");
