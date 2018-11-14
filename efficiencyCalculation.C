@@ -50,22 +50,22 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   Bool_t is_pileup_from_spd_5_08;
   int run_number;
 
-  unsigned int ntrack;//
-  unsigned int nmc_truth;//
-  float mc_truth_pt[kMax];//
-  float mc_truth_eta[kMax];//
-  float mc_truth_phi[kMax];//
-  short mc_truth_pdg_code[kMax];//
-  char mc_truth_charge[kMax];//
-  float track_pt[kMax];//
-  float track_eta[kMax];//
-  float track_phi[kMax];//
-  float track_dca_xy[kMax];//
-  float track_dca_z[kMax];//
-  float track_its_chi_square[kMax];//
+  unsigned int ntrack;
+  unsigned int nmc_truth;
+  float mc_truth_pt[kMax];
+  float mc_truth_eta[kMax];
+  float mc_truth_phi[kMax];
+  short mc_truth_pdg_code[kMax];
+  char  mc_truth_charge[kMax];
+  float track_pt[kMax];
+  float track_eta[kMax];
+  float track_phi[kMax];
+  float track_dca_xy[kMax];
+  float track_dca_z[kMax];
+  float track_its_chi_square[kMax];
   
 
-  UInt_t ncluster;
+  UInt_t  ncluster;
   Float_t cluster_e[kMax];
   Float_t cluster_e_cross[kMax];
   Float_t cluster_pt[kMax];
@@ -81,30 +81,30 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   Float_t cluster_distance_to_bad_channel[kMax];
   
   unsigned short cluster_mc_truth_index[kMax][32];
-  Int_t cluster_ncell[kMax];
-  UShort_t  cluster_cell_id_max[kMax];
-  Float_t cluster_lambda_square[kMax][2];
-  Float_t cell_e[17664];
+  Int_t          cluster_ncell[kMax];
+  UShort_t       cluster_cell_id_max[kMax];
+  Float_t        cluster_lambda_square[kMax][2];
+  Float_t        cell_e[17664];
     
   //Jets reco
-  UInt_t njet_ak04its;
+  UInt_t  njet_ak04its;
   Float_t jet_ak04its_pt_raw[kMax];
   Float_t jet_ak04its_eta_raw[kMax];
   Float_t jet_ak04its_phi_raw[kMax];
-  UInt_t njet_ak04tpc;
+  UInt_t  njet_ak04tpc;
   Float_t jet_ak04tpc_pt_raw[kMax];
   Float_t jet_ak04tpc_eta_raw[kMax];
   Float_t jet_ak04tpc_phi_raw[kMax];
 
 
-  char track_charge[kMax];//
-  unsigned short track_mc_truth_index[kMax];//
-  UChar_t track_its_ncluster[kMax];//
-  unsigned char track_quality[kMax];//
-  ULong64_t trigger_mask[2];
+  char           track_charge[kMax];
+  unsigned short track_mc_truth_index[kMax];
+  UChar_t        track_its_ncluster[kMax];
+  unsigned char  track_quality[kMax];
+  ULong64_t      trigger_mask[2];
 
-  float eg_cross_section;//
-  int eg_ntrial;//
+  float eg_cross_section;
+  int   eg_ntrial;
   
   tree->SetBranchAddress("primary_vertex", primary_vertex);
   tree->SetBranchAddress("is_pileup_from_spd_5_08", &is_pileup_from_spd_5_08);
@@ -311,11 +311,11 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
 
   //Photon
-  auto h_Reco  = new TH1F("h_Reco","", 59, 1, 60);
-  auto hCluster_pt = new TH1F("hCluster_pt", "", 59, 1, 60);
-  auto hEG1_E = new TH1F("hEG1_E", "", 59, 1, 60);//Jose, I have already declared the histograms
-  auto hEG2_E = new TH1F("hEG2_E", "", 59, 1, 60);
-  auto hMB_E = new TH1F("hMB_E", "", 59, 1, 60);
+  auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
+  auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
+  auto hEG1_E = new TH1F("hEG1_E", "", 55, 5, 60);//Jose, I have already declared the histograms
+  auto hEG2_E = new TH1F("hEG2_E", "", 55, 5, 60);
+  auto hMB_E = new TH1F("hMB_E", "", 55, 5, 60);
 
     h_Reco->Sumw2();
     hCluster_pt->Sumw2();
@@ -454,9 +454,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(7);
       
       if(track_eta[n] > 0)
-	hEta_plus->Fill(track_pt[n]);
+          hEta_plus->Fill(track_pt[n]);
       if(track_eta[n] < 0)
-	hEta_minus->Fill(track_pt[n]);
+          hEta_minus->Fill(track_pt[n]);
       
       eventFill = 1;
       if (eventChange && !isMC) {numEvents_tracks++; eventChange = false;}
@@ -475,7 +475,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 
     bool eventChange2 = true;
     //Loop over clusters
-    for(ULong64_t n=0; n< ncluster; n++)
+    for(ULong64_t n=0; n < ncluster; n++)
       {
 	if (eventChange2 && !isMC) {numEvents_clusters2++; eventChange2 = false;}
 	//cout << "in ncluster loop" << endl;
@@ -486,18 +486,17 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	    trigMask_MB[0] = triggerMask_17q_group1_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group1_MB[1];
           
-          trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
-          trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
+        trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
+        trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
 	  }
 	if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
 	  {
-	    //cout << "This was group three run" << endl;
+	    //cout << "This was group two run" << endl;
 	    trigMask_MB[0] = triggerMask_17q_group2_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group2_MB[1];
           
-          trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
-          trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
-
+        trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
+        trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
 	  }
 	if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
 	  {
@@ -505,21 +504,21 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	    trigMask_MB[0] = triggerMask_17q_group3_MB[0];
 	    trigMask_MB[1] = triggerMask_17q_group3_MB[1];
           
-          trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
-          trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
+        trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
+        trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
 	  }
 
 	if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
 	  {
 	    hMB_E->Fill(cluster_e[n]);
 	  }
-          if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
-          {
-              hEG2_E->Fill(cluster_e[n]);
-          }
-	//Jose, make a smimilar if statment and fill for EG2 trigger and hEG2_E histogram
+    if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
+      {
+        hEG2_E->Fill(cluster_e[n]);
+      }
 	
 	//Photon Selection
+          
 	//if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
 	if( not(cluster_ncell[n]>2)) continue;   //removes clusters with 1 or 2 cells
 	if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue; //removes "spiky" clusters
@@ -675,6 +674,10 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   // hEta_plus->Write("hPt_plusEta");
   // hEta_minus->Write("hPt_minusEta");
   // hTrackCut->Write("hTrackCut");
+    
+  hCluster_pt->Scale(1/numEvents)
+  hMB_E->Scale(1/numEvents)
+  hEG2_E->Scale(1/numEvents)
   
   //writing photon info
   hCluster_pt->Write("cluster_pt");
