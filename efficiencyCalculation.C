@@ -662,7 +662,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hTrackCut->GetXaxis()->SetBinLabel(7,"DCAr cut");
   hTrackCut->GetXaxis()->SetBinLabel(8,"DCAz cut");
 
-  
   hEventCounts->GetXaxis()->SetBinLabel(1, "Passing Event Selection only");
   hEventCounts->GetXaxis()->SetBinLabel(2, "Passing Track Selection");
 
@@ -675,9 +674,8 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   // hEta_minus->Write("hPt_minusEta");
   // hTrackCut->Write("hTrackCut");
     
-    hCluster_pt->Scale(1/numEvents);
-    hMB_E->Scale(1/numEvents);
-    hEG2_E->Scale(1/numEvents);
+    hMB_E->Scale(1/float(numEvents));
+    hEG2_E->Scale(1/float(numEvents));
   
   //writing photon info
   hCluster_pt->Write("cluster_pt");
