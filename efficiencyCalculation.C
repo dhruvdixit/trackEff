@@ -156,7 +156,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   tree->SetBranchAddress("cluster_cell_id_max", cluster_cell_id_max);
   tree->SetBranchAddress("cell_e", cell_e);
   
-
   tree->SetBranchAddress("njet_ak04its", &njet_ak04its);
   tree->SetBranchAddress("jet_ak04its_pt_raw", jet_ak04its_pt_raw);
   tree->SetBranchAddress("jet_ak04its_eta_raw", jet_ak04its_eta_raw);
@@ -349,6 +348,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   int numEvents_clusters = 0;
   int numEvents_clusters2 = 0;
   int numEvents = 0;
+
+    int numEvents_MB = 0;
+    int numEvents_EG2 = 0;
   //const int TrackBit = 16; //ITSONLY==16; ITS--TPC with full-jet cuts
 
   const double maxEta = 0.8;
@@ -432,6 +434,44 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     if(not( TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
     if(primary_vertex[2] == 0.000000) continue;
     if(is_pileup_from_spd_5_08) continue; //removes pileup
+      
+      if(std::find(vec17q_group1.begin(), vec17q_group1.end(), run_number) != vec17q_group1.end())
+      {
+          //cout << "This was group one run" << endl;
+          trigMask_MB[0] = triggerMask_17q_group1_MB[0];
+          trigMask_MB[1] = triggerMask_17q_group1_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
+      }
+      if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
+      {
+          //cout << "This was group two run" << endl;
+          trigMask_MB[0] = triggerMask_17q_group2_MB[0];
+          trigMask_MB[1] = triggerMask_17q_group2_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
+      }
+      if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
+      {
+          //cout << "This was group three run" << endl;
+          trigMask_MB[0] = triggerMask_17q_group3_MB[0];
+          trigMask_MB[1] = triggerMask_17q_group3_MB[1];
+          
+          trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
+          trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
+      }
+      
+      if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
+      {
+          numEvents_MB++;
+      }
+      if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
+      {
+          numEvents_EG2++;
+      }
+      
     //if(((trigMask[0] & trigger_mask[0]) == 0) && ((trigMask[1] & trigger_mask[1]) == 0)) continue; //trigger selection
     hZvertex->Fill(primary_vertex[2]);
     numEvents++;
@@ -674,8 +714,8 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   // hEta_minus->Write("hPt_minusEta");
   // hTrackCut->Write("hTrackCut");
     
-    hMB_E->Scale(1/float(numEvents));
-    hEG2_E->Scale(1/float(numEvents));
+    hMB_E->Scale(1/float(numEvents_MB));
+    hEG2_E->Scale(1/float(numEvents_EG2));
   
   //writing photon info
   hCluster_pt->Write("cluster_pt");
