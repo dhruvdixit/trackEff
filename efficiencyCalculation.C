@@ -519,34 +519,15 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       {
 	if (eventChange2 && !isMC) {numEvents_clusters2++; eventChange2 = false;}
 	//cout << "in ncluster loop" << endl;
-
-	if(std::find(vec17q_group1.begin(), vec17q_group1.end(), run_number) != vec17q_group1.end())
-	  {
-	    //cout << "This was group one run" << endl;
-	    trigMask_MB[0] = triggerMask_17q_group1_MB[0];
-	    trigMask_MB[1] = triggerMask_17q_group1_MB[1];
           
-        trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
-        trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
-	  }
-	if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
-	  {
-	    //cout << "This was group two run" << endl;
-	    trigMask_MB[0] = triggerMask_17q_group2_MB[0];
-	    trigMask_MB[1] = triggerMask_17q_group2_MB[1];
+          //Photon Selection
           
-        trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
-        trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
-	  }
-	if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
-	  {
-	    //cout << "This was group three run" << endl;
-	    trigMask_MB[0] = triggerMask_17q_group3_MB[0];
-	    trigMask_MB[1] = triggerMask_17q_group3_MB[1];
-          
-        trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
-        trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
-	  }
+          //if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
+          if( not(TMath::Abs(cluster_eta[n]) < 0.67)) continue;        //for reconstruction
+          if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue;     //removes "spiky" clusters
+          if( not(cluster_ncell[n]>2)) continue;                       //removes clusters with 1 or 2 cells
+          if( not(cluster_nlocal_maxima[n]<= 3)) continue;             //require to have at most 2 local maxima.
+          if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
 
 	if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
 	  {
@@ -556,14 +537,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       {
         hEG2_E->Fill(cluster_e[n]);
       }
-	
-	//Photon Selection
-          
-	//if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
-	if( not(cluster_ncell[n]>2)) continue;   //removes clusters with 1 or 2 cells
-	if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue; //removes "spiky" clusters
-	if( not(cluster_nlocal_maxima[n]<= 3)) continue; //require to have at most 2 local maxima.
-	//if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
 	
 	//Isolation and shower shape selection:
 	if( not(cluster_iso_its_04[n] < 1.5)) continue;
