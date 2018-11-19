@@ -310,11 +310,11 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
 
   //Photon
-  auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
-  auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
-  auto hEG1_E = new TH1F("hEG1_E", "", 55, 5, 60);//Jose, I have already declared the histograms
-  auto hEG2_E = new TH1F("hEG2_E", "", 55, 5, 60);
-  auto hMB_E = new TH1F("hMB_E", "", 55, 5, 60);
+  auto h_Reco  = new TH1F("h_Reco","", 60, 0, 60);
+  auto hCluster_pt = new TH1F("hCluster_pt", "", 60, 0, 60);
+  auto hEG1_E = new TH1F("hEG1_E", "", 60, 0, 60);//Jose, I have already declared the histograms
+  auto hEG2_E = new TH1F("hEG2_E", "", 60, 0, 60);
+  auto hMB_E = new TH1F("hMB_E", "", 60, 0, 60);
 
     h_Reco->Sumw2();
     hCluster_pt->Sumw2();
@@ -526,17 +526,17 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
           if( not(TMath::Abs(cluster_eta[n]) < 0.67)) continue;        //for reconstruction
           if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue;     //removes "spiky" clusters
           if( not(cluster_ncell[n]>2)) continue;                       //removes clusters with 1 or 2 cells
-          if( not(cluster_nlocal_maxima[n]<= 3)) continue;             //require to have at most 2 local maxima.
+          if( not(cluster_nlocal_maxima[n]<3)) continue;               //require to have at most 2 local maxima.
           if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
 
-	if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
-	  {
-	    hMB_E->Fill(cluster_e[n]);
-	  }
-    if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
-      {
-        hEG2_E->Fill(cluster_e[n]);
-      }
+          if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
+          {
+              hMB_E->Fill(cluster_e[n]);
+          }
+          if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
+          {
+              hEG2_E->Fill(cluster_e[n]);
+          }
 	
 	//Isolation and shower shape selection:
 	if( not(cluster_iso_its_04[n] < 1.5)) continue;
