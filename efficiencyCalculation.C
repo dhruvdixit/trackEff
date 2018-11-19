@@ -310,22 +310,29 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
 
   //Photon
+    
+  auto hCluster_pt_check = new TH1F("hCluster_pt_check", "", 60, 0, 60);
+    
   auto h_Reco  = new TH1F("h_Reco","", 60, 0, 60);
   auto hCluster_pt = new TH1F("hCluster_pt", "", 60, 0, 60);
   auto hEG1_E = new TH1F("hEG1_E", "", 60, 0, 60);//Jose, I have already declared the histograms
   auto hEG2_E = new TH1F("hEG2_E", "", 60, 0, 60);
   auto hMB_E = new TH1F("hMB_E", "", 60, 0, 60);
+    
+    hCluster_pt_check->Sumw2();
 
     h_Reco->Sumw2();
     hCluster_pt->Sumw2();
     hEG1_E->Sumw2();
     hEG2_E->Sumw2();
     hMB_E->Sumw2();
+    
+    hCluster_pt_check->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
 
-    hCluster_pt->SetTitle("; p_{T} (GeV/c) ; dN/dE");
-    hEG1_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
-    hEG2_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
-    hMB_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
+    hCluster_pt->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    hEG1_E->SetTitle("; E (GeV) ; dN/dE");
+    hEG2_E->SetTitle("; E (GeV) ; dN/dE");
+    hMB_E->SetTitle(";  E (GeV) ; dN/dE");
     
   //Jets
   auto h_jetpt_reco_its = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
@@ -421,17 +428,16 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
     tree->GetEntry(ievent);
     nevent += 1;
-    if(nevent%10==0) //if(nevent%1000==0)
+    if(nevent%1000==0) //if(nevent%1000==0)
       {
 	std::cout << nevent << std::endl;
-	cout << run_number << endl;
+	//cout << run_number << endl;
       }
 
-    
     bool eventChange = true;
     
     //Event Selection:
-    if(not( TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
+    if(not (TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
     if(primary_vertex[2] == 0.000000) continue;
     if(is_pileup_from_spd_5_08) continue; //removes pileup
       
@@ -472,9 +478,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
           numEvents_EG2++;
       }
       
-    //if(((trigMask[0] & trigger_mask[0]) == 0) && ((trigMask[1] & trigger_mask[1]) == 0)) continue; //trigger selection
     hZvertex->Fill(primary_vertex[2]);
     numEvents++;
+      
     int eventFill = 0;
 
     //Loop over all the tracks    
@@ -482,7 +488,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       hTrackCut->Fill(0);
       if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
       if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
-      if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
+      //if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
       if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(4);
       if(TrackBit == 16)
 	{
@@ -519,6 +525,8 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       {
 	if (eventChange2 && !isMC) {numEvents_clusters2++; eventChange2 = false;}
 	//cout << "in ncluster loop" << endl;
+          
+          hCluster_pt_check->Fill(cluster_e[n]);
           
           //Photon Selection
           
@@ -691,10 +699,11 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     hEG2_E->Scale(1/float(numEvents_EG2));
   
   //writing photon info
-  hCluster_pt->Write("cluster_pt");
-  hEventCounts->Write("hEventCounts");
-  hMB_E->Write("hMB_E");
-  hEG2_E->Write("hEG2_E");
+    hCluster_pt_check->Write("cluster_pt_check");
+    hCluster_pt->Write("cluster_pt");
+    hEventCounts->Write("hEventCounts");
+    hMB_E->Write("hMB_E");
+    hEG2_E->Write("hEG2_E");
     //Jose, write out EG2 histogram to file. The name in the pathenthesis is what you will call when you use the file in python.
   
   // hZvertex->Write("hZvertex");
