@@ -322,10 +322,10 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     hEG2_E->Sumw2();
     hMB_E->Sumw2();
 
-    hCluster_pt->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
-    hEG1_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
-    hEG2_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
-    hMB_E->SetTitle("; p_{T} (GeV/c) ; dN/dp_{T}");
+    hCluster_pt->SetTitle("; p_{T} (GeV/c) ; dN/dE");
+    hEG1_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
+    hEG2_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
+    hMB_E->SetTitle("; p_{T} (GeV/c) ; dN/dE");
     
   //Jets
   auto h_jetpt_reco_its = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
@@ -524,7 +524,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
           
           //if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
           if( not(TMath::Abs(cluster_eta[n]) < 0.67)) continue;        //for reconstruction
-          if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue;     //removes "spiky" clusters
+          if( not(cluster_e_cross[n]/cluster_e[n]>0.03)) continue;     //removes "spiky" clusters
           if( not(cluster_ncell[n]>2)) continue;                       //removes clusters with 1 or 2 cells
           if( not(cluster_nlocal_maxima[n]<3)) continue;               //require to have at most 2 local maxima.
           if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
