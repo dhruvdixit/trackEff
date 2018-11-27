@@ -39,33 +39,35 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
         return;
     }
     TTree* tree;
+    
     if(hasAliDir)
         tree = (TTree*)f->Get("AliAnalysisTaskNTGJ/_tree_event");
     else
         tree = (TTree*)f->Get("_tree_event");
     if(!tree){ printf("Error: cannot find tree"); }
+    
     const Int_t kMax = 5000;
     
     Double_t primary_vertex[3];
-    Bool_t is_pileup_from_spd_5_08;
-    int run_number;
+    Bool_t   is_pileup_from_spd_5_08;
+    int      run_number;
     
-    unsigned int ntrack;//
-    unsigned int nmc_truth;//
-    float mc_truth_pt[kMax];//
-    float mc_truth_eta[kMax];//
-    float mc_truth_phi[kMax];//
-    short mc_truth_pdg_code[kMax];//
-    char mc_truth_charge[kMax];//
-    float track_pt[kMax];//
-    float track_eta[kMax];//
-    float track_phi[kMax];//
-    float track_dca_xy[kMax];//
-    float track_dca_z[kMax];//
-    float track_its_chi_square[kMax];//
+    unsigned int ntrack;
+    unsigned int nmc_truth;
+    float mc_truth_pt[kMax];
+    float mc_truth_eta[kMax];
+    float mc_truth_phi[kMax];
+    short mc_truth_pdg_code[kMax];
+    char  mc_truth_charge[kMax];
+    float track_pt[kMax];
+    float track_eta[kMax];
+    float track_phi[kMax];
+    float track_dca_xy[kMax];
+    float track_dca_z[kMax];
+    float track_its_chi_square[kMax];
     
     
-    UInt_t ncluster;
+    UInt_t  ncluster;
     Float_t cluster_e[kMax];
     Float_t cluster_e_cross[kMax];
     Float_t cluster_pt[kMax];
@@ -81,52 +83,53 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     Float_t cluster_distance_to_bad_channel[kMax];
     
     unsigned short cluster_mc_truth_index[kMax][32];
-    Int_t cluster_ncell[kMax];
-    UShort_t  cluster_cell_id_max[kMax];
-    Float_t cluster_lambda_square[kMax][2];
-    Float_t cell_e[17664];
+    Int_t          cluster_ncell[kMax];
+    UShort_t       cluster_cell_id_max[kMax];
+    Float_t        cluster_lambda_square[kMax][2];
+    Float_t        cell_e[17664];
     
     //Jets reco
-    UInt_t njet_ak04its;
+    UInt_t  njet_ak04its;
     Float_t jet_ak04its_pt_raw[kMax];
     Float_t jet_ak04its_eta_raw[kMax];
     Float_t jet_ak04its_phi_raw[kMax];
-    UInt_t njet_ak04tpc;
+    UInt_t  njet_ak04tpc;
     Float_t jet_ak04tpc_pt_raw[kMax];
     Float_t jet_ak04tpc_eta_raw[kMax];
     Float_t jet_ak04tpc_phi_raw[kMax];
     
     
-    char track_charge[kMax];//
-    unsigned short track_mc_truth_index[kMax];//
-    UChar_t track_its_ncluster[kMax];//
-    unsigned char track_quality[kMax];//
-    ULong64_t trigger_mask[2];
+    char           track_charge[kMax];
+    unsigned short track_mc_truth_index[kMax];
+    UChar_t        track_its_ncluster[kMax];
+    unsigned char  track_quality[kMax];
+    ULong64_t      trigger_mask[2];
     
-    float eg_cross_section;//
-    int eg_ntrial;//
+    float eg_cross_section;
+    int   eg_ntrial;
     
     tree->SetBranchAddress("primary_vertex", primary_vertex);
     tree->SetBranchAddress("is_pileup_from_spd_5_08", &is_pileup_from_spd_5_08);
     tree->SetBranchAddress("run_number", &run_number);
     
-    tree->SetBranchAddress("nmc_truth",&nmc_truth);//
-    tree->SetBranchAddress("mc_truth_pt",mc_truth_pt);//
-    tree->SetBranchAddress("mc_truth_eta",mc_truth_eta);//
-    tree->SetBranchAddress("mc_truth_phi",mc_truth_phi);//
-    tree->SetBranchAddress("mc_truth_charge",mc_truth_charge);//
-    tree->SetBranchAddress("mc_truth_pdg_code",mc_truth_pdg_code);//
+    tree->SetBranchAddress("nmc_truth",&nmc_truth);
+    tree->SetBranchAddress("mc_truth_pt",mc_truth_pt);
+    tree->SetBranchAddress("mc_truth_eta",mc_truth_eta);
+    tree->SetBranchAddress("mc_truth_phi",mc_truth_phi);
+    tree->SetBranchAddress("mc_truth_charge",mc_truth_charge);
+    tree->SetBranchAddress("mc_truth_pdg_code",mc_truth_pdg_code);
     
-    tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);//
-    tree->SetBranchAddress("ntrack", &ntrack);//
-    tree->SetBranchAddress("track_pt",track_pt);//
-    tree->SetBranchAddress("track_eta",track_eta);//
-    tree->SetBranchAddress("track_phi",track_phi);//
+    tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);
+    tree->SetBranchAddress("ntrack", &ntrack);
+    tree->SetBranchAddress("track_pt",track_pt);
+    tree->SetBranchAddress("track_eta",track_eta);
+    tree->SetBranchAddress("track_phi",track_phi);
     tree->SetBranchAddress("track_mc_truth_index", track_mc_truth_index);
-    tree->SetBranchAddress("track_quality", track_quality);//
-    tree->SetBranchAddress("track_dca_xy", track_dca_xy);//
-    tree->SetBranchAddress("track_dca_z", track_dca_z);//
-    tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);//
+    tree->SetBranchAddress("track_quality", track_quality);
+    tree->SetBranchAddress("track_dca_xy", track_dca_xy);
+    tree->SetBranchAddress("track_dca_z", track_dca_z);
+    tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);
+    
     if(!isMC)
         tree->SetBranchAddress("trigger_mask", trigger_mask);
     if(isMC)
@@ -156,7 +159,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     tree->SetBranchAddress("cluster_cell_id_max", cluster_cell_id_max);
     tree->SetBranchAddress("cell_e", cell_e);
     
-    
     tree->SetBranchAddress("njet_ak04its", &njet_ak04its);
     tree->SetBranchAddress("jet_ak04its_pt_raw", jet_ak04its_pt_raw);
     tree->SetBranchAddress("jet_ak04its_eta_raw", jet_ak04its_eta_raw);
@@ -166,7 +168,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     tree->SetBranchAddress("jet_ak04tpc_eta_raw", jet_ak04tpc_eta_raw);
     tree->SetBranchAddress("jet_ak04tpc_phi", jet_ak04tpc_phi_raw);
     
-    const Double_t bins[10] = {  0.1,          0.16681005,   0.27825594,   0.46415888 ,  0.77426368, 1.29154967,   2.15443469,   3.59381366,   5.9948425,   10.0};
+    const Double_t bins[10] = { 0.1, 0.16681005, 0.27825594, 0.46415888 , 0.77426368, 1.29154967, 2.15443469, 3.59381366, 5.9948425, 10.0};
     
     /*const Double_t bins_track[50] = {
      0.15,    0.169,   0.19,    0.214,   0.241,   0.271,   0.306,   0.344,   0.387,   0.436,
@@ -243,12 +245,12 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     
     //tracks
     auto hCorrelation   = new TH2F("hCorrelation", "", nbinstrack, trackbins, nbinstrack, trackbins);
-    auto hRes_Pt   = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
-    auto hDen  = new TH1F("hDen", "", nbinstrack, trackbins);
-    auto hNum  = new TH1F("hNum","", nbinstrack, trackbins);
-    auto hNum2  = new TH1F("hNum2","", nbinstrack, trackbins);
-    auto hFake = new TH1F("hFake", "", nbinstrack, trackbins);
-    auto hReco = new TH1F("hReco","", nbinstrack,trackbins);
+    auto hRes_Pt        = new TH2F("hRes_Pt", "", 200, 0, 10.0, 80, -50, 50);
+    auto hDen           = new TH1F("hDen", "", nbinstrack, trackbins);
+    auto hNum           = new TH1F("hNum","", nbinstrack, trackbins);
+    auto hNum2          = new TH1F("hNum2","", nbinstrack, trackbins);
+    auto hFake          = new TH1F("hFake", "", nbinstrack, trackbins);
+    auto hReco          = new TH1F("hReco","", nbinstrack,trackbins);
     auto hTrack_pt = new TH1F("hTrack_pt","", nbinstrack, trackbins);
     auto hNum2Deta = new TH2F("hNum2Deta","", nbinseta, etabins, nbinstrack, trackbins);
     auto hDen2Deta = new TH2F("hDen2Deta","", nbinseta, etabins, nbinstrack, trackbins);
@@ -267,36 +269,36 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     auto hCorrelation_dEtapT = new TH2F("hCorrelation_dEtapT", "" , 100, -0.1, 0.1, 100, 0.1, 10.0);
     auto hCorrelation_dPhipT = new TH2F("hCorrelation_dPhipT", "" , 100, -0.1, 0.1, 100, 0.1, 10.0);
     
-    auto hDCA_xy = new TH1F("hDCA_xy", "", 500, -1.0, 1.0);
-    auto hDCA_z = new TH1F("hDCA_z", "", 500, -1.0, 1.0);
+    auto hDCA_xy      = new TH1F("hDCA_xy", "", 500, -1.0, 1.0);
+    auto hDCA_z       = new TH1F("hDCA_z", "", 500, -1.0, 1.0);
     auto hDCA_xy_fake = new TH1F("hDCA_xy_fake", "", 500, -1.0, 1.0);
-    auto hDCA_z_fake = new TH1F("hDCA_z_fake", "", 500, -1.0, 1.0);
+    auto hDCA_z_fake  = new TH1F("hDCA_z_fake", "", 500, -1.0, 1.0);
     
-    auto hChi2 = new TH1F("hChi2","", 50, 0, 10.1);
+    auto hChi2      = new TH1F("hChi2","", 50, 0, 10.1);
     auto hChi2_fake = new TH1F("hChi2_fake","", 50, 0, 10.1);
     
     
-    auto hITSclus = new TH1F("hITSclus", "", 7, -0.5, 6.5);
+    auto hITSclus      = new TH1F("hITSclus", "", 7, -0.5, 6.5);
     auto hITSclus_fake = new TH1F("hITSclus_fake", "", 7, -0.5, 6.5);
     
-    auto hIso_ITS = new TH1F("hIso_ITS","", 25, -10, 40);
-    auto hIso_TPC = new TH1F("hIso_TPC","", 25, -10, 40);
+    auto hIso_ITS   = new TH1F("hIso_ITS","", 25, -10, 40);
+    auto hIso_TPC   = new TH1F("hIso_TPC","", 25, -10, 40);
     auto hIso_Truth = new TH1F("hIso_Truth","", 25, -10, 40);
     
-    auto hTrue_eta  = new TH1F("hTrue_eta", "", nbinseta, etabins);
-    auto hReco_eta  = new TH1F("hReco_eta", "", nbinseta, etabins);
-    auto hEta  = new TH1F("hEta", "", nbinseta, etabins);
-    auto hEta_plus  = new TH1F("hEta_plus", "", nbinstrack,trackbins);
+    auto hTrue_eta   = new TH1F("hTrue_eta", "", nbinseta, etabins);
+    auto hReco_eta   = new TH1F("hReco_eta", "", nbinseta, etabins);
+    auto hEta        = new TH1F("hEta", "", nbinseta, etabins);
+    auto hEta_plus   = new TH1F("hEta_plus", "", nbinstrack,trackbins);
     auto hEta_minus  = new TH1F("hEta_minus", "", nbinstrack,trackbins);
-    auto hTrue_phi = new TH1F("hTrue_phi","", nbinsphi, phibins);
-    auto hReco_phi = new TH1F("hReco_phi","", nbinsphi, phibins);
-    auto hPhi = new TH1F("hPhi","", nbinsphi, phibins);
-    auto hReco2D = new TH2F("hReco2D","", nbinsphi, phibins, nbinseta, etabins);
+    auto hTrue_phi   = new TH1F("hTrue_phi","", nbinsphi, phibins);
+    auto hReco_phi   = new TH1F("hReco_phi","", nbinsphi, phibins);
+    auto hPhi        = new TH1F("hPhi","", nbinsphi, phibins);
+    auto hReco2D     = new TH2F("hReco2D","", nbinsphi, phibins, nbinseta, etabins);
     
-    auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
-    auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
+    auto hTrackCut    = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
+    auto hNumTracks   = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
     auto hEventCounts = new TH1F("hEventCounts","", 10, -0.5, 9.5);
-    auto hZvertex = new TH1F("hZvertez", "", 60, -30, 30);
+    auto hZvertex     = new TH1F("hZvertez", "", 60, -30, 30);
     
     hFake->Sumw2();
     hTrack_pt->Sumw2();
@@ -311,11 +313,11 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
     
     //Photon
-    auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
+    auto h_Reco      = new TH1F("h_Reco","", 55, 5, 60);
     auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
-    auto hEG1_E = new TH1F("hEG1_E", "", 20, 0, 20);
-    auto hEG2_E = new TH1F("hEG2_E", "", 20, 0, 20);
-    auto hMB_E = new TH1F("hMB_E", "", 20, 0, 20);
+    auto hEG1_E      = new TH1F("hEG1_E", "", 20, 0, 20);
+    auto hEG2_E      = new TH1F("hEG2_E", "", 20, 0, 20);
+    auto hMB_E       = new TH1F("hMB_E", "", 20, 0, 20);
     
     h_Reco->Sumw2();
     hCluster_pt->Sumw2();
@@ -328,10 +330,10 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     hEG1_E->SetTitle("; E (GeV) ; 1/N_{ev}^{EG1}dN/dE");
     hEG2_E->SetTitle("; E (GeV) ; 1/N_{ev}^{EG2}dN/dE");
     //Jets
-    auto h_jetpt_reco_its = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
+    auto h_jetpt_reco_its  = new TH1F("h_jetpt_reco_its", "reco jet reco pt", 30, 0, 30);
     auto h_jetEta_reco_its = new TH1F("h_jetEta_reco_its","", nbinseta, etabins);
     auto h_jetPhi_reco_its = new TH1F("h_jetPhi_reco_its","", nbinsphi, phibins);
-    auto h_jet2D_reco_its = new TH2F("h_jet2D_reco_its","", nbinsphi, phibins, nbinseta, etabins);
+    auto h_jet2D_reco_its  = new TH2F("h_jet2D_reco_its","", nbinsphi, phibins, nbinseta, etabins);
     
     h_jetpt_reco_its->Sumw2();
     h_jetEta_reco_its->Sumw2();
@@ -376,7 +378,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     triggerMask_17q_group3_MB[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);
     triggerMask_17q_group3_MB[1] = (one1 << 61);//minbais
     
-    
     ULong64_t triggerMask_17q_group1_EG2[2];
     triggerMask_17q_group1_EG2[0] = (one1 << 14) | (one1 << 27);
     triggerMask_17q_group1_EG2[1] = 0;//EG2
@@ -386,7 +387,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     ULong64_t triggerMask_17q_group3_EG2[2];
     triggerMask_17q_group3_EG2[0] = (one1 << 10) | (one1 << 45);
     triggerMask_17q_group3_EG2[1] = (one1 << 54);//EG2
-    
     
     //13d triggers
     ULong64_t triggerMask_13d_group1_MB[2];
@@ -409,7 +409,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     ULong64_t triggerMask_13d_group2_EG2[2];
     triggerMask_13d_group2_EG2[0] = (one1 << 19) | (one1 << 31);
     triggerMask_13d_group2_EG2[1] = 0;//EG2
-    
     
     //13bcef triggers
     ULong64_t triggerMask_13bc = (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 45) | (one1 << 46);//minbias
@@ -452,14 +451,12 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
         if(nevent%10000==0)
         {
             std::cout << nevent << std::endl;
-            cout << run_number << endl;
+            //cout << run_number << endl;
         }
-        
         
         bool eventChange = true;
         bool isMB, isEG1, isEG2;
         isMB = isEG1 = isEG2 = false;
-        
         
         //Event Selection:
         if(not( TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
@@ -597,7 +594,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
             //Isolation and shower shape selection:
             if( not(cluster_iso_its_04[n] < 1.5)) continue;
             if( not(cluster_lambda_square[n][0]<0.27)) continue; //single-photon selection (as opposed to merged photon).
-            
             
             if (eventChange) {numEvents_clusters++; eventChange = false;}
             
@@ -757,6 +753,10 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     // hEta_minus->Write("hPt_minusEta");
     // hTrackCut->Write("hTrackCut");
     
+    hMB_E->Scale(1/float(numEvents_MB));
+    hEG1_E->Scale(1/float(numEvents_EG1));
+    hEG2_E->Scale(1/float(numEvents_EG2));
+    
     //writing photon info
     hCluster_pt->Write("cluster_pt");
     hEventCounts->Write("hEventCounts");
@@ -820,6 +820,7 @@ void efficiencyCalculation(){
     //Run(16, "pPb/13d/13d.root", false, true, true);
     Run(16, "pPb/13d/13d_3run_forTrig.root", false, true, true);
     
+    Run(16, "pPb/13d/13d_3run_forTrig_noEThresh.root", false, true, true);
     
     //Run(16, "pPb/13e/13e.root", false, true, true);
     
@@ -853,7 +854,7 @@ void efficiencyCalculation(){
     //Run(16, "pp/17q/17q_wSDD.root", false, true, true);
     Run(16, "pp/17q/17q_CENT_wSDD_3run_forTrig.root", false, true, true);
     
-    
+    Run(16, "pp/17q/17q_CENT_wSDD_3run_forTrig_noEThresh.root", false, true, true);
     
     return;
 }
