@@ -753,9 +753,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     // hEta_minus->Write("hPt_minusEta");
     // hTrackCut->Write("hTrackCut");
     
-    hMB_E->Scale(1/float(numEvents_MB));
-    hEG1_E->Scale(1/float(numEvents_EG1));
-    hEG2_E->Scale(1/float(numEvents_EG2));
+    //hMB_E->Scale(1/float(numEvents_MB));
+    //hEG1_E->Scale(1/float(numEvents_EG1));
+    //hEG2_E->Scale(1/float(numEvents_EG2));
     
     //writing photon info
     hCluster_pt->Write("cluster_pt");
