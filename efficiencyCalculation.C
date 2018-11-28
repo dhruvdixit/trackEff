@@ -657,7 +657,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     
     //Normalizing the bins and getting yaxsis to be 1/Nevt*dN/dptdeta
     cout << numEvents_tracks << endl;
-    cout << filename(0,3) << "\tTotal Events: " << numEntries << "\tEvent selection: " << numEvents << "\tPre-Cluster selection: " << numEvents_clusters2 << "\tPostCluster selection: " << numEvents_clusters << endl;
+    cout << filename(0,3) << "\tTotal Events: " << numEntries << "\tEvent selection: " << numEvents << "\tPre-Cluster selection: " << numEvents_clusters2 << "\tPostCluster selection: " << numEvents_clusters << "\tTotal MB trig Events: " << numEvents_MB << "\tTotal EG2 trig Events: " << numEvents_EG2 << endl;
     const double tot_eta = 1.6;
     for(int i = 1; i < hTrack_pt->GetNbinsX()+1; i++)
     {
