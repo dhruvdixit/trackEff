@@ -48,6 +48,8 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   
   Double_t primary_vertex[3];
   Bool_t is_pileup_from_spd_5_08;
+  Bool_t is_incomplete_daq;
+  int npileup_vertex_spd;
   int run_number;
 
   unsigned int ntrack;//
@@ -60,10 +62,16 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   float track_pt[kMax];//
   float track_eta[kMax];//
   float track_phi[kMax];//
-  float track_dca_xy[kMax];//
-  float track_dca_z[kMax];//
-  float track_its_chi_square[kMax];//
-  
+  Float_t track_dca_xy[kMax];
+  Float_t track_dca_z[kMax];
+  Float_t track_its_chi_square[kMax];
+  UChar_t track_its_ncluster[kMax];
+  UChar_t track_tpc_ncluster[kMax];
+  UChar_t track_tpc_ncluster_findable[kMax];
+  UChar_t track_tpc_ncluster_shared[kMax];
+  UChar_t track_tpc_xrow[kMax];
+  Float_t track_tpc_chi_square[kMax];
+  Float_t track_its_chi_square_constrainedVsGlobal[kMax];  
 
   UInt_t ncluster;
   Float_t cluster_e[kMax];
@@ -99,7 +107,6 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 
   char track_charge[kMax];//
   unsigned short track_mc_truth_index[kMax];//
-  UChar_t track_its_ncluster[kMax];//
   unsigned char track_quality[kMax];//
   ULong64_t trigger_mask[2];
 
@@ -108,7 +115,9 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   
   tree->SetBranchAddress("primary_vertex", primary_vertex);
   tree->SetBranchAddress("is_pileup_from_spd_5_08", &is_pileup_from_spd_5_08);
+  //tree->SetBranchAddress("is_incomplete_daq", &is_incomplete_daq);
   tree->SetBranchAddress("run_number", &run_number);
+  tree->SetBranchAddress("npileup_vertex_spd", &npileup_vertex_spd);
 
   tree->SetBranchAddress("nmc_truth",&nmc_truth);//
   tree->SetBranchAddress("mc_truth_pt",mc_truth_pt);//
@@ -117,16 +126,31 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   tree->SetBranchAddress("mc_truth_charge",mc_truth_charge);//
   tree->SetBranchAddress("mc_truth_pdg_code",mc_truth_pdg_code);//
 
-  tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);//
+  //tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);//
   tree->SetBranchAddress("ntrack", &ntrack);//
   tree->SetBranchAddress("track_pt",track_pt);//
   tree->SetBranchAddress("track_eta",track_eta);//
   tree->SetBranchAddress("track_phi",track_phi);//
   tree->SetBranchAddress("track_mc_truth_index", track_mc_truth_index);
   tree->SetBranchAddress("track_quality", track_quality);//
-  tree->SetBranchAddress("track_dca_xy", track_dca_xy);//
-  tree->SetBranchAddress("track_dca_z", track_dca_z);//
-  tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);//
+  tree->SetBranchAddress("track_its_ncluster", track_its_ncluster);
+  tree->SetBranchAddress("track_dca_xy", track_dca_xy);
+  tree->SetBranchAddress("track_dca_z", track_dca_z);
+  tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);
+  tree->SetBranchAddress("track_tpc_ncluster",track_tpc_ncluster);
+  tree->SetBranchAddress("track_tpc_ncluster_findable",track_tpc_ncluster_findable);
+  tree->SetBranchAddress("track_tpc_ncluster_shared",track_tpc_ncluster_shared);
+  tree->SetBranchAddress("track_tpc_xrow",track_tpc_xrow);
+  tree->SetBranchAddress("track_tpc_chi_square",track_its_chi_square);
+  tree->SetBranchAddress("track_tpc_chi_square_constrainedVsGlobal",track_its_chi_square_constrainedVsGlobal);
+  
+  //tree->SetBranchAddress("track_dca_xy", track_dca_xy);//
+  //tree->SetBranchAddress("track_dca_z", track_dca_z);//
+  //tree->SetBranchAddress("track_its_chi_square", track_its_chi_square);//
+
+
+
+
   if(!isMC)
     tree->SetBranchAddress("trigger_mask", trigger_mask);
   if(isMC)
@@ -218,7 +242,14 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     phibins[i] = phimin + i*phistep;
   }
   
-  const int nbinstrack = 21;
+  const int nbinstrack = 51;
+  Double_t trackbins[nbinstrack+1] = {
+    0.15,  0.20,  0.25,  0.30,  0.35,  0.40,  0.45,  0.50,  0.55,  0.60, 
+    0.65,  0.70,  0.75,  0.80,  0.85,  0.90,  0.95,  1.00,  1.10,  1.20,
+    1.30,  1.40,  1.50,  1.60,  1.70,  1.80,  1.90,  2.00,  2.20,  2.40,
+    2.60,  2.80,  3.00,  3.20,  3.40,  3.60,  3.80,  4.00,  4.50,  5.00,
+    5.50,  6.00,  6.50,  7.00,  8.00,  9.00,  10.00, 11.00, 12.00, 13.00,
+    14.00, 15.00};//nbinsbstrack = 51*/
   /*Double_t trackbins[nbinstrack+1] = {
     0.15,  0.20,  0.25,  0.30,  0.35,  0.40,  0.45,  0.50,  0.55,  0.60, 
     0.65,  0.70,  0.75,  0.80,  0.85,  0.90,  0.95,  1.00,  1.10,  1.20,
@@ -230,10 +261,20 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
     0.15,  0.30,  0.50,  0.70,  0.90,  1.00,  1.50,  2.50,  3.00,  3.50,  
     4.00,  4.50,  5.00,  5.50,  6.00,  6.50,  7.00,  8.00,  9.00,  10.00, 
     11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 18.00, 20.00, 22.00, 24.00, 
-    26.00, 30.00};//nbinsbstrack = 32*/
-  Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0, 22.00, 24.00, 26.00, 30.00};//pPB nbinstrack = 21*/
+    26.00, 30.00};//nbinsbstrack = 31*/
+  //Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0, 22.00, 24.00, 26.00, 30.00};//pPB nbinstrack = 21*/
+  //Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0};//pPB nbinstrack = 15*/
+
+
   //Double_t trackbins[nbinstrack+1] = {1.0,2.0,3.0,4.0,5.0,6.0, 8.0, 10.0, 13.0, 20.0};//pp bining nbinstrack = 9
-  /*Double_t trackbins[nbinstrack+1] = {};//{1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0};
+  //Double_t trackbins[nbinstrack+1] = {0.5, 1.0,2.0,3.0,4.0,5.0,6.0, 8.0, 10.0, 13.0, 20.0};//pp bining nbinstrack = 10
+  /*Double_t trackbins[nbinstrack+1] = {
+    0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 
+    0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 
+    1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.20,
+    3.60, 4.00, 5.00, 6.00, 8.00, 10.0, 13.0, 20.0};//pp nbinstrack = 37*/
+
+  /*Double_t trackbins[nbinstrack+1] = {};
   double ptmin = 1;
   double ptmax = 16;
   double ptstep = (ptmax-ptmin)/nbinstrack;
@@ -293,11 +334,14 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   auto hPhi = new TH1F("hPhi","", nbinsphi, phibins);
   auto hReco2D = new TH2F("hReco2D","", nbinsphi, phibins, nbinseta, etabins);
   
-  auto hTrackCut = new TH1F("hTrackCut", "", 10, -0.5, 9.5);
+  auto hTrackCut = new TH1F("hTrackCut", "", 15, -0.5, 14.5);
   auto hNumTracks = new TH1F("hNumTracks", "", 500, -0.5, 499.5);
   auto hEventCounts = new TH1F("hEventCounts","", 10, -0.5, 9.5);
   auto hZvertex = new TH1F("hZvertez", "", 60, -30, 30);
-
+  auto hHitsITS = new TH1F("hHitsITS", "", 10, -0.5, 9.5);
+  auto hEventCut = new TH1F("hEventCut", "", 10, -0.5, 9.5);
+  auto hPileUpVertex = new TH1F("hPileUpVertex", "", 20, -0.5, 19.5);
+  
   hFake->Sumw2();  
   hTrack_pt->Sumw2();
   hEta->Sumw2();
@@ -309,13 +353,16 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   hPhi->SetTitle(";#phi;counts");
   hEta_plus->SetTitle(";#p_{T} [GeV/c];counts");
   hEta_minus->SetTitle(";p_{T} [GeV/c];counts");
+  hHitsITS->SetTitle(";Layers hit; counts");
 
   //Photon
-  auto h_Reco  = new TH1F("h_Reco","", 55, 5, 60);
-  auto hCluster_pt = new TH1F("hCluster_pt", "", 55, 5, 60);
-  auto hEG1_E = new TH1F("hEG1_E", "", 20, 0, 20);
-  auto hEG2_E = new TH1F("hEG2_E", "", 20, 0, 20);
-  auto hMB_E = new TH1F("hMB_E", "", 20, 0, 20);
+  const int nbinscluster = 14;
+  Double_t clusterbins[nbinscluster+1] = {5.00, 6.00, 7.00, 8.00, 9.00, 10.00, 12.00, 14.00, 16.00, 18.00, 20.00, 25.00, 30.00, 40.00, 60.00};//nbinscluster = 14, Erwann binning
+  auto h_Reco  = new TH1F("h_Reco","", nbinscluster, clusterbins);
+  auto hCluster_pt = new TH1F("hCluster_pt", "", nbinscluster, clusterbins);
+  auto hEG1_E = new TH1F("hEG1_E", "", 40, 0, 40);
+  auto hEG2_E = new TH1F("hEG2_E", "", 40, 0, 40);
+  auto hMB_E = new TH1F("hMB_E", "", 40, 0, 40);
 
   h_Reco->Sumw2();
   hCluster_pt->Sumw2();
@@ -353,17 +400,27 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   int numEvents_EG2 = 0;
   //const int TrackBit = 16; //ITSONLY==16; ITS--TPC with full-jet cuts
 
-  const double maxEta = 0.8;
-  const double jetptmin = 5.0;
-  const bool doCutDCA = false; 
-  const bool doCutChi2 = false;
-
   ULong64_t one1 = 1;
  
   //17p triggers
   ULong64_t triggerMask_17p[2];
-  triggerMask_17p[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);//minbais
-  triggerMask_17p[1] = (one1 << 11);//minbias
+  triggerMask_17p[0] = (one1 << 0) | (one1 << 3);//kint7 for 17p
+  //triggerMask_17p[0] = (one1 << 3) | (one1 << 26);//kint7 for default pp
+  //triggerMask_17p[0] = (one1 << 0) | (one1 << 3);//minbias
+  //triggerMask_17p[1] = 0;//minbias
+    
+  //triggerMask_17p[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);//minbais
+  //triggerMask_17p[1] = (one1 << 11);//minbias
+
+  ULong64_t triggerMask_17p_282030[2];
+  triggerMask_17p_282030[0] = (one1 << 0);//kint7 for 17p
+  //triggerMask_17p_282030[0] = (one1 << 0) | (one1 << 36);//deafult pp
+  //triggerMask_17p_282030[0] = (one1 << 0) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39);//minbias
+  //triggerMask_17p_282030[1] = 0;//minbias
+
+  ULong64_t triggerMask_17p_fast[2];
+  triggerMask_17p_fast[0] = (one1 << 0);//minbias+fast
+  triggerMask_17p_fast[1] = (one1 << 11);//minbias+fast
 
   //17q triggers
   ULong64_t triggerMask_17q_group1_MB[2];
@@ -374,7 +431,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   triggerMask_17q_group1_MB[1] = 0;//minbias
   ULong64_t triggerMask_17q_group3_MB[2];
   triggerMask_17q_group3_MB[0] = (one1 << 0) | (one1 << 3) | (one1 << 4) | (one1 << 5) | (one1 << 6) | (one1 << 26) | (one1 << 27) | (one1 << 28) | (one1 << 29);
-  triggerMask_17q_group3_MB[1] = (one1 << 61);//minbais
+  triggerMask_17q_group3_MB[1] = (one1 << 11);//minbais
  
 
   ULong64_t triggerMask_17q_group1_EG2[2];
@@ -410,25 +467,42 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   triggerMask_13d_group2_EG2[0] = (one1 << 19) | (one1 << 31);
   triggerMask_13d_group2_EG2[1] = 0;//EG2 
 
+  ULong64_t triggerMask_13d_EMCAL[2];
+  triggerMask_13d_EMCAL[0] = (one1 << 18) | (one1 << 19);
+  
+  //15n triggers
+  //ULong64_t triggerMask_15n = (one1 << 12) | (one1 << 22);//kint7 runs: 244364
+  //ULong64_t triggerMask_15n = (one1 << 13) | (one1 << 21);//kint7 runs: 244340, 
+  ULong64_t triggerMask_15n = (one1 << 12) | (one1 << 20);//kint7 runs: 244351, 244411,244480, 244540 
 
   //13bcef triggers
-  ULong64_t triggerMask_13bc = (one1 << 6) | (one1 << 7) | (one1 << 8) | (one1 << 9) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 45) | (one1 << 46);//minbias 
-  //ULong64_t triggerMask_13d = (one1 << 18) | (one1 << 19) | (one1 << 20) | (one1 << 21);
+  ULong64_t triggerMask_13bc = (one1 << 6);//kint7
   ULong64_t triggerMask_13ef = (one1 << 17) | (one1 << 18) | (one1 << 19) | (one1 << 20);
-  //ULong64_t triggerMask_13d_MB = (one1 << 2) | (one1 << 3) | (one1 << 25) | (one1 << 26) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias 
   ULong64_t triggerMask_13e_MB = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias
   ULong64_t triggerMask_13f_MB = (one1 << 2) | (one1 << 3) | (one1 << 24) | (one1 << 25) | (one1 << 26) | (one1 << 36) | (one1 << 37) | (one1 << 38) | (one1 << 39) | (one1 << 40) | (one1 << 41) | (one1 << 42) | (one1 << 43) | (one1 << 44);//minbias
 
   ULong64_t trigMask[2] = {0};
-  
-  if(filename(0,3) == "13b" || filename(0,3) == "13c")
+
+  cout << filename(0,3).Data() << endl;
+  if(filename(0,3) == "15n")
+    trigMask[0] = triggerMask_15n;
+  if(filename(0,3) == "13b")// || filename(0,3) == "13c")
     trigMask[0] = triggerMask_13bc;
-  //if(filename(0,3) == "13d")
-  //  trigMask[0] = triggerMask_13d_MB;  
+  if(filename(0,3) == "13d")
+    //trigMask[0] = triggerMask_13d_MB;  
+    trigMask[0] = triggerMask_13d_EMCAL[0];  
   if(filename(0,3) == "13f" || filename(0,3) == "13e")
     trigMask[0] = triggerMask_13ef;
   if(filename(0,3) == "17p")
-    {trigMask[0] = triggerMask_17p[0]; trigMask[1] = triggerMask_17p[1];}   
+    {
+      trigMask[0] = triggerMask_17p[0];
+      if(filename(0,10) == "17p_282030")
+	{
+	  trigMask[0] = triggerMask_17p_282030[0];
+	  cout << __FILE__ << __LINE__ << endl;
+	}
+    }
+  cout << trigMask[0] << endl;
   //  if(filename(0,3) == "17q")
   //  trigMask[0] = triggerMask_17q;
 
@@ -441,9 +515,14 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   ULong64_t trigMask_EG1[2] = {0};
   ULong64_t trigMask_EG2[2] = {0};
 
-  //cout << triggerMask_13bc << "\t" << trigMask << endl;
+  //cout << triggerMask_1 << endl;
+  const double maxEta = 0.8;
+  const double jetptmin = 5.0;
+  const bool doCutDCA = false; 
+  const bool doCutChi2 = false;
+
   Long64_t totEvents = tree->GetEntries();
-  Long64_t restrictEvents = 1000000;
+  Long64_t restrictEvents = 100000;
   Long64_t numEntries = TMath::Min(totEvents,restrictEvents);
   std::cout << numEntries << std::endl;
   for (Long64_t ievent=0;ievent< numEntries ;ievent++) {
@@ -453,106 +532,77 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       {
 	std::cout << nevent << std::endl;
 	cout << run_number << endl;
+	//if(run_number != 195872)
+	//  break;
       }
 
     
     bool eventChange = true;
     bool isMB, isEG1, isEG2;
     isMB = isEG1 = isEG2 = false;
-    
 
-    //Event Selection:
-    if(not( TMath::Abs(primary_vertex[2])<10.0)) continue; //vertex z position
-    if(primary_vertex[2] == 0.000000) continue;
-    if(is_pileup_from_spd_5_08) continue; //removes pileup
+    hPileUpVertex->Fill(npileup_vertex_spd);
     hZvertex->Fill(primary_vertex[2]);
+
+    hEventCut->Fill(0);
+    //Event Selection:
+    if(not( TMath::Abs(primary_vertex[2])<10.0)) {hEventCut->Fill(1); continue;} //vertex z position
+    if(primary_vertex[2] == 0.000000) {hEventCut->Fill(2); continue;}
+    //if(is_pileup_from_spd_5_08) {hEventCut->Fill(3); continue;} //removes pileup
+    //if(((trigMask[0] & trigger_mask[0]) == 0)) {hEventCut->Fill(4); continue;}
+    //if(not(ntrack > 0)) continue;
+    //if(is_incomplete_daq){hEventCut->Fill(5); continue;} 
+    
+    hEventCut->Fill(6);
     numEvents++;
-    
-    //Trigger Selection
-    //17q trigger
-    if(std::find(vec17q_group1.begin(), vec17q_group1.end(), run_number) != vec17q_group1.end())
-      {
-	//cout << "This was group one run" << endl;
-	trigMask_MB[0] = triggerMask_17q_group1_MB[0];
-	trigMask_MB[1] = triggerMask_17q_group1_MB[1];
-	trigMask_EG2[0] = triggerMask_17q_group1_EG2[0];
-	trigMask_EG2[1] = triggerMask_17q_group1_EG2[1];
-      }
-    if(std::find(vec17q_group2.begin(), vec17q_group2.end(), run_number) != vec17q_group2.end())
-      {
-	//cout << "This was group three run" << endl;
-	trigMask_MB[0] = triggerMask_17q_group2_MB[0];
-	trigMask_MB[1] = triggerMask_17q_group2_MB[1];
-	trigMask_EG2[0] = triggerMask_17q_group2_EG2[0];
-	trigMask_EG2[1] = triggerMask_17q_group2_EG2[1];
-      }
-    if(std::find(vec17q_group3.begin(), vec17q_group3.end(), run_number) != vec17q_group3.end())
-      {
-	//cout << "This was group three run" << endl;
-	trigMask_MB[0] = triggerMask_17q_group3_MB[0];
-	trigMask_MB[1] = triggerMask_17q_group3_MB[1];
-	trigMask_EG2[0] = triggerMask_17q_group3_EG2[0];
-	trigMask_EG2[1] = triggerMask_17q_group3_EG2[1];
-      }
-    
-    
-    //13d trigger
-    if(std::find(vec13d_group1.begin(), vec13d_group1.end(), run_number) != vec13d_group1.end())
-      {
-	//cout << "This was group one run" << endl;
-	trigMask_MB[0] = triggerMask_13d_group1_MB[0];
-	trigMask_MB[1] = triggerMask_13d_group1_MB[1];
-	trigMask_EG1[0] = triggerMask_13d_group1_EG1[0];
-	trigMask_EG1[1] = triggerMask_13d_group1_EG1[1];
-	trigMask_EG2[0] = triggerMask_13d_group1_EG2[0];
-	trigMask_EG2[1] = triggerMask_13d_group1_EG2[1];
-      }
-    if(std::find(vec13d_group2.begin(), vec13d_group2.end(), run_number) != vec13d_group2.end())
-      {
-	//cout << "This was group three run" << endl;
-	trigMask_MB[0] = triggerMask_13d_group2_MB[0];
-	trigMask_MB[1] = triggerMask_13d_group2_MB[1];
-	trigMask_EG1[0] = triggerMask_13d_group2_EG1[0];
-	trigMask_EG1[1] = triggerMask_13d_group2_EG1[1];
-	trigMask_EG2[0] = triggerMask_13d_group2_EG2[0];
-	trigMask_EG2[1] = triggerMask_13d_group2_EG2[1];
-      }
-
-
-    if(((trigMask_MB[0] & trigger_mask[0]) != 0) || ((trigMask_MB[1] & trigger_mask[1]) != 0))
-      {
-	numEvents_MB++;
-	isMB = true;
-      }
-    if(((trigMask_EG1[0] & trigger_mask[0]) != 0) || ((trigMask_EG1[1] & trigger_mask[1]) != 0))
-      {
-	numEvents_EG1++;
-	isEG1 = true;
-      }
-    if(((trigMask_EG2[0] & trigger_mask[0]) != 0) || ((trigMask_EG2[1] & trigger_mask[1]) != 0))
-      {
-	numEvents_EG2++;
-	isEG2 = true;
-      }
-
 
     int eventFill = 0;
 
     //Loop over all the tracks    
     for (int n=0; n< ntrack; n++){ 
       hTrackCut->Fill(0);
-      if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
-      if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
-      if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
-      if(track_its_chi_square[n]>36.0) continue; hTrackCut->Fill(4);
+      if((track_quality[n]&TrackBit)==0)  {hTrackCut->Fill(1); continue;}//track quality cut
+      if(TMath::Abs(track_eta[n])> maxEta) {hTrackCut->Fill(2); continue;}//eta cut
+      //if((1.4 < track_phi[n]) && (track_phi[n] < 3.1)) {continue;}//phi cut
+      if(track_pt[n] < 0.15) {hTrackCut->Fill(3); continue;}//pt cut
+      //if(track_its_ncluster[n] <= 0) continue; //just making sure that number of clusters is greater than 0
+      if((track_its_chi_square[n]/track_its_ncluster[n]) > 36.0) {hTrackCut->Fill(4); continue;}
+      //if(track_its_chi_square[n]>36.0) {hTrackCut->Fill(4); continue;}
       if(TrackBit == 16)
 	{
-	  if(track_its_ncluster[n] < 4) continue; 
-	  hTrackCut->Fill(5);//its cluster cut
+	  hHitsITS->Fill(track_its_ncluster[n]);
+	  if(track_its_ncluster[n] < 4) {hTrackCut->Fill(5); continue;}//its cluster cut
 	}
       //double DCAcut = 7*(27+50/TMath::Power(track_pt[n],1.01));//paper
       if(TMath::Abs(track_dca_xy[n]) > 2.4) continue; hTrackCut->Fill(6);
-      if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(7);
+      if(TMath::Abs(track_dca_z[n]) > 3.2) continue; hTrackCut->Fill(7);//*/
+      
+      //Track Cuts
+      /*ULong64_t trackCutBits = 0;
+      /*
+	bits     cuts
+	0        ncluster_its >= 2
+	1        ncluster_tpc >= 1
+	2        ncluster_findable >= 1
+	3        
+       */
+      /* hTrackCut->Fill(0);
+      if(track_its_ncluster[n] < 2) continue; 
+      if(track_tpc_ncluster[n] < 1) continue;
+      if(track_tpc_ncluster_findable[n] < 1) continue;  
+      if((track_quality[n]&TrackBit)==0) continue; hTrackCut->Fill(1);//track quality cut
+      if(TMath::Abs(track_eta[n])> maxEta) continue; hTrackCut->Fill(2);//eta cut
+      if(track_pt[n] < 0.15) continue; hTrackCut->Fill(3);//pt cut
+      
+      if((track_its_chi_square[n]/track_its_ncluster[n])>36.0) continue; hTrackCut->Fill(4);//its cluster chi^2 cut
+      if((track_tpc_chi_square[n]/track_tpc_ncluster[n])>4.0) continue; hTrackCut->Fill(5);//tpc cluster chi^2 cut
+      if(track_its_chi_square_constrainedVsGlobal[n] > 36.0) continue; hTrackCut->Fill(6);//tpc-its cluster cut
+      if((track_tpc_xrow[n]/track_tpc_ncluster_findable[n])<0.8) continue; hTrackCut->Fill(7);//xrow/findable cluster cut
+      if((track_tpc_ncluster_shared[n]/track_tpc_ncluster[n]) > 0.4) continue; hTrackCut->Fill(8);//shared/total cluster cut
+      
+      if(TMath::Abs(track_dca_xy[n]) > (0.0182+0.0350/track_pt[n])) continue; hTrackCut->Fill(9);//dcaxy
+      if(TMath::Abs(track_dca_z[n]) > 2.0) continue; hTrackCut->Fill(10);//dcaz//*/
+      
       
       if(track_eta[n] > 0)
 	hEta_plus->Fill(track_pt[n]);
@@ -560,7 +610,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	hEta_minus->Fill(track_pt[n]);
       
       eventFill = 1;
-      if (eventChange && !isMC) {numEvents_tracks++; eventChange = false;}
+      if (eventChange) {numEvents_tracks++; eventChange = false;}
 
       hReco->Fill(track_pt[n]);
       hTrack_pt->Fill(track_pt[n]);
@@ -570,13 +620,17 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       hPhi->Fill(track_phi[n]);
       hReco2D->Fill(track_phi[n], track_eta[n]);
       
-    }//end ntrack loop
+      }//end ntrack loop*/
     
     hEventCounts->Fill(eventFill);
     
     eventChange = true;
     bool eventChange2 = true;
-    //Loop over clusters
+    /*//Loop over clusters
+    ULong64_t trigMask_13d_trigs[3];//0 = MB, 1 = EG1, 2 = EG2
+    trigMask_13d_trigs[0] = (one1 << 2);
+    trigMask_13d_trigs[1] = (one1 << 18);
+    trigMask_13d_trigs[2] = (one1 << 19);
     for(ULong64_t n=0; n< ncluster; n++)
       {
 	if (eventChange2) {numEvents_clusters2++; eventChange2 = false;}
@@ -586,19 +640,26 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	//Photon Selection
 	//if( not(cluster_pt[n]>8)) {continue;} //select pt of photons
 	if( not(cluster_ncell[n]>2)) continue;   //removes clusters with 1 or 2 cells
-	if( not(cluster_e_cross[n]/cluster_e[n]>0.05)) continue; //removes "spiky" clusters
-	if( not(cluster_nlocal_maxima[n]<= 3)) continue; //require to have at most 2 local maxima.
-	//if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
-	
-	if(isMB)  hMB_E->Fill(cluster_e[n]);
-	if(isEG1) hEG1_E->Fill(cluster_e[n]);
-	if(isEG2) hEG2_E->Fill(cluster_e[n]);
-
+	if( not(cluster_e_cross[n]/cluster_e[n]>0.03)) continue; //removes "spiky" clusters
+	if( not(cluster_nlocal_maxima[n]<= 2)) continue; //require to have at most 2 local maxima.
+	if( not(cluster_distance_to_bad_channel[n]>=2.0)) continue;
+       
 	//Isolation and shower shape selection:
-	if( not(cluster_iso_its_04[n] < 1.5)) continue;
-	if( not(cluster_lambda_square[n][0]<0.27)) continue; //single-photon selection (as opposed to merged photon).
+	//if( not(cluster_iso_its_04[n] < 1.5)) continue;
+	//if( not(cluster_lambda_square[n][0]<0.27)) continue; //single-photon selection (as opposed to merged photon).
 	
-	
+	if(not ((trigMask_13d_trigs[0] & trigger_mask[0]) == 0))  {
+	  hMB_E->Fill(cluster_pt[n]);
+	  numEvents_MB++;
+	}
+	if(not ((trigMask_13d_trigs[1] & trigger_mask[0]) == 0))  {
+	  hEG1_E->Fill(cluster_pt[n]);
+	  numEvents_EG1++;
+	}
+	if(not ((trigMask_13d_trigs[2] & trigger_mask[0]) == 0))  {
+	  hEG2_E->Fill(cluster_pt[n]);
+	  numEvents_EG2++;
+	}
 	if (eventChange) {numEvents_clusters++; eventChange = false;}
 	
 	h_Reco->Fill(cluster_pt[n]);	
@@ -610,17 +671,18 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       }
     
     //Loop over jets
-    for (ULong64_t ijet = 0; ijet < njet_ak04its; ijet++) {
+    /*for (ULong64_t ijet = 0; ijet < njet_ak04its; ijet++) {
       if(not (jet_ak04its_pt_raw[ijet]>jetptmin)) continue;
       if(not (TMath::Abs(jet_ak04its_eta_raw[ijet])  <0.5 ) ) continue;
       h_jetpt_reco_its->Fill(jet_ak04its_pt_raw[ijet]);
       h_jetEta_reco_its->Fill(jet_ak04its_eta_raw[ijet]);
       h_jetPhi_reco_its->Fill(jet_ak04its_phi_raw[ijet]);
       h_jet2D_reco_its->Fill(jet_ak04its_phi_raw[ijet], jet_ak04its_eta_raw[ijet]);
-    }
+    }*/
     
   }//loop over events
   std::cout << " END LOOP  " << std::endl;
+  //cout << "minbias/EG1/EG2 events:" << numEvents << "\t" << numEvents_EG1 << "\t" << numEvents_EG2 << "\t" << endl;
 
   auto gausfit = new TF1("gaus","gaus", -25,25);
   gausfit->SetLineColor(kRed);
@@ -663,22 +725,44 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
   cout << numEvents_tracks << endl;
   cout << filename(0,3) << "\tTotal Events: " << numEntries << "\tEvent selection: " << numEvents << "\tPre-Cluster selection: " << numEvents_clusters2 << "\tPostCluster selection: " << numEvents_clusters << endl;
   const double tot_eta = 1.6;
+
+  auto normalizer = new TH1D("normalizer", "normalizer", 10, -0.5, 9.5);
+  normalizer->SetBinContent(1, numEvents);
+  normalizer->SetBinContent(2, tot_eta);
   for(int i = 1; i < hTrack_pt->GetNbinsX()+1; i++)
     {
       double dpt = hTrack_pt->GetBinWidth(i);
-      //cout << dpt << endl;
       double content = hTrack_pt->GetBinContent(i);
-      double temp = content/((double)numEvents*dpt*tot_eta);
+      //double temp = content/((double)numEvents*dpt*tot_eta);
+      double temp = content/((double)numEvents);
+      cout << dpt << "\t" << content << "\t" << temp << endl;
       //double temp = content/dpt;
       hTrack_pt->SetBinContent(i, temp);
       
       double error = hTrack_pt->GetBinError(i);
-      double tempErr = error/((double)numEvents*dpt*tot_eta);
+      double tempErr = error/((double)numEvents);
       //double tempErr = error/dpt;
       hTrack_pt->SetBinError(i, tempErr);
-    }
+    }//*/
+
+  /*//scaling for clusters
+  for(int i = 1; i <  hCluster_pt->GetNbinsX()+1; i++)
+    {
+      double dpt = hCluster_pt->GetBinWidth(i);
+      double content = hCluster_pt->GetBinContent(i);
+      //double temp = content/((double)numEvents*dpt*tot_eta);
+      double temp = content/((double)numEvents*dpt);
+      cout << dpt << "\t" << content << "\t" << temp << endl;
+      //double temp = content/dpt;
+      hCluster_pt->SetBinContent(i, temp);
+      
+      double error = hCluster_pt->GetBinError(i);
+      double tempErr = error/((double)numEvents*dpt*tot_eta);
+      //double tempErr = error/dpt;
+      hCluster_pt->SetBinError(i, tempErr);
+    }//*/
   
-  //scaling the jets
+  /*//scaling the jets
   for(int i = 1; i < h_jetpt_reco_its->GetNbinsX()+1; i++)
     {
       double dpt = h_jetpt_reco_its->GetBinWidth(i);
@@ -692,7 +776,7 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
       h_jetpt_reco_its->SetBinError(i, tempErr);
     }
 
-  for(int i = 1; i < hMB_E->GetNbinsX()+1; i++)
+  /*for(int i = 1; i < hMB_E->GetNbinsX()+1; i++)
     {
       double dE = hMB_E->GetBinWidth(i);
       
@@ -725,47 +809,77 @@ void Run(const int TrackBit, TString address, bool isMC, bool hasAliDir, bool tr
 	  hEG2_E->SetBinContent(i,tempEG2);
 	  hEG2_E->SetBinError(i, tempErrEG2);
 	}
-    }
+    }//*/
 
   
   auto c = new TCanvas();   
   
-  filename += "_trigEff_wCuts";
-  //filename += "junk_pPb_trig_pileup__zv_jets_1M";  
-  auto fout = new TFile(Form("OutputData/fout_%i_%s.root",TrackBit, filename.Data()), "RECREATE");
-  //   
+     
+  
+
     
   hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
+  hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
+  hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
+  hTrackCut->GetXaxis()->SetBinLabel(4,"pt cut");
+  hTrackCut->GetXaxis()->SetBinLabel(5,"ITS #chi^{2}/ncluster cut");
+  hTrackCut->GetXaxis()->SetBinLabel(6,"TPC #chi^{2}/ncluster cut");  
+  hTrackCut->GetXaxis()->SetBinLabel(7,"TPC-ITS #chi^(2) cut");
+  hTrackCut->GetXaxis()->SetBinLabel(8, "xrow/findable");  
+  hTrackCut->GetXaxis()->SetBinLabel(9, "shared/ncluster");
+  hTrackCut->GetXaxis()->SetBinLabel(10,"DCAr cut");
+  hTrackCut->GetXaxis()->SetBinLabel(11,"DCAz cut");//*/
+  
+  /*hTrackCut->GetXaxis()->SetBinLabel(1,"All Tracks");
   hTrackCut->GetXaxis()->SetBinLabel(2,"Track quality cut");
   hTrackCut->GetXaxis()->SetBinLabel(3,"Track #eta cut");
   hTrackCut->GetXaxis()->SetBinLabel(4,"pt cut");
   hTrackCut->GetXaxis()->SetBinLabel(5,"ITS #chi^{2} cut");
   hTrackCut->GetXaxis()->SetBinLabel(6,"ITS nCluster cut");
   hTrackCut->GetXaxis()->SetBinLabel(7,"DCAr cut");
-  hTrackCut->GetXaxis()->SetBinLabel(8,"DCAz cut");
+  hTrackCut->GetXaxis()->SetBinLabel(8,"DCAz cut");//*/
+
+  hEventCut->GetXaxis()->SetBinLabel(1,"All events");
+  hEventCut->GetXaxis()->SetBinLabel(2,"primary vertex > 10");
+  hEventCut->GetXaxis()->SetBinLabel(3,"primary vertex = 0");
+  hEventCut->GetXaxis()->SetBinLabel(4,"pile up");
+  hEventCut->GetXaxis()->SetBinLabel(5,"trigger selection");
+  hEventCut->GetXaxis()->SetBinLabel(6,"incomplete daq");
+  hEventCut->GetXaxis()->SetBinLabel(7,"passed");
 
   
   hEventCounts->GetXaxis()->SetBinLabel(1, "Passing Event Selection only");
   hEventCounts->GetXaxis()->SetBinLabel(2, "Passing Track Selection");
 
+  normalizer->GetXaxis()->SetBinLabel(1,"numEvents");
+  normalizer->GetXaxis()->SetBinLabel(2,"tot_eta");
+
+  filename += "_publishedBinning15GeV_tracking_noPileupTrig_newChiCut_100Kevents_normalizeByEventOnly_StdAcceptance";
+  auto fout = new TFile(Form("OutputData/fout_%i_%ibins_%s.root",TrackBit, nbinstrack, filename.Data()), "RECREATE");
+  //hZvertex->Fill(primary_vertex[2]);
+
   //writing tracking stuff
-  // hTrack_pt->Write("hReco");
-  // hEta->Write("hReco_eta");
-  // hPhi->Write("hReco_phi");
-  // hReco2D->Write("hReco_phiEta");
-  // hEta_plus->Write("hPt_plusEta");
-  // hEta_minus->Write("hPt_minusEta");
-  // hTrackCut->Write("hTrackCut");
+  hTrack_pt->Write("hReco");
+  hEta->Write("hReco_eta");
+  hPhi->Write("hReco_phi");
+  hReco2D->Write("hReco_phiEta");
+  hEta_plus->Write("hPt_plusEta");
+  hEta_minus->Write("hPt_minusEta");
+  hTrackCut->Write("hTrackCut");//*/
+  
+  hHitsITS->Write("hHitsITS");
+  normalizer->Write("hNormalizer");//*/
   
   //writing photon info
-  hCluster_pt->Write("cluster_pt");
+  /*hCluster_pt->Write("cluster_pt");
   hEventCounts->Write("hEventCounts");
   hMB_E->Write("hMB_E");
   hEG1_E->Write("hEG1_E");
-  hEG2_E->Write("hEG2_E");
+  hEG2_E->Write("hEG2_E");//*/
   
-  // hZvertex->Write("hZvertex");
-
+  hZvertex->Write("hZvertex");
+  hPileUpVertex->Write("hPileUpVertex");
+  hEventCut->Write("hEventCut");
 
   //Writing out jet info
   //h_jetpt_reco_its->Write("hReco");
@@ -816,26 +930,59 @@ void efficiencyCalculation(){
   //Run(16, "pPb/13b/13b_3run.root", false, true, false);
   //Run(3, "pPb/13b/13b.root", false, true, false);
   //Run(16, "pPb/13b/13b.root", false, true, false);
+  //Run(3, "pPb/13b/13b_3run_new.root", false, true, false);
+  //Run(16, "pPb/13b/13b_3run_new.root", false, true, false);
+  
+  //Run(16, "pPb/13c/13c_2runs_al.root", false, true, true);
 
+  //Run(3, "pPb/13d/13d.root", false, true, true);
   //Run(16, "pPb/13d/13d.root", false, true, true);
-  Run(16, "pPb/13d/13d_3run_forTrig.root", false, true, true);
+  //Run(16, "pPb/13d/13d_3run_forTrig_noEThresh.root", false, true, true);
+  //Run(16, "pPb/13d/13d_7runs_noThresh.root", false, true, true);
 
 
   //Run(16, "pPb/13e/13e.root", false, true, true);
 
-  //Run(16, "pPb/13f/13f.root", false, true, true);
+  //Run(3, "pPb/13f/13f.root", false, true, true);
+  Run(16, "pPb/13f/13f.root", false, true, true);
   //Run(3, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);
   //Run(16, "pPb/13f/13f_pass4_v2_minbias_1run", false, true, true);  
   //Run(3, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
   //Run(16, "pPb/13f/13f_pass4_minbias_v2_5run", false, true, true);
-
+  //Run(16, "pPb/13f/13f_newGoodRuns_skimClusterMinE12.root", false, true, true);
+  //Run(16, "pPb/13f/13f_newBadRuns_skimClusterMinE12.root", false, true, true);
+  Run(16, "pPb/13f/13f_new_skimClusterMinE12.root", false, true, true);
+  
+  //Run(3, "pPb/13def.root", false, true, true);
   //Run(16, "pPb/13def.root", false, true, true);
-    
+  //Run(3, "pPb/Skimmed_13def_ptmin12.0_Nevent_1416399.root", false, false, true);
+  //Run(16, "pPb/Skimmed_13def_ptmin12.0_Nevent_1416399.root", false, false, true);
+  
+  
   //Run(3, "pPb/13c/13c_pass4_v2", false, true, false);
   //Run(16, "pPb/13c/13c_pass4_v2", false, true, false);
   
   //Run(3, "pPb/13c/13c_pass4_v1_0GevtrackSkim.root", false, true, false);
   //Run(16, "pPb/13c/13c_pass4_v1_0GevtrackSkim.root", false, true, false);
+
+  //Run(3, "pp/15n/15n_1run.root", false, true, true);
+  //Run(16, "pp/15n/15n_1run.root", false, true, true);
+  //Run(3, "pp/15n/15n_1run_pass3.root", false, true, true);
+  //Run(16, "pp/15n/15n_1run_pass3.root", false, true, true);
+  //Run(3, "pp/15n/15n_1run_pass3_new.root", false, true, true);
+  //Run(16, "pp/15n/15n_1run_pass3_new.root", false, true, true);
+  //Run(3, "pp/15n/15n_r244411.root", false, true, true);
+  //Run(3, "pp/15n/15n_r244480.root", false, true, true);
+  //Run(1, "pp/15n/15n_r244480_allCuts.root", false, true, true);
+  //Run(1, "pp/15n/15n_r244480_onlyNoteCuts.root", false, true, true);
+  //Run(1, "pp/15n/15n_r244364_looseCuts.root", false, true, true);
+  //Run(1, "pp/15n/15n_r244351_looseCuts.root", false, true, true);  
+  //Run(1, "pp/15n/15n_r244480_looseCuts.root", false, true, true);
+  //Run(3, "pp/15n/15n_r244540.root", false, true, true);
+  //Run(16, "pp/15n/15n_r244411.root", false, true, true);
+  //Run(16, "pp/15n/15n_r244480.root", false, true, true);
+  //Run(16, "pp/15n/15n_r244540.root", false, true, true);
+
 
   //Run(3, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
   //Run(16, "pp/17p/17p_CENTwSDD_v2_3runs_noClusCut.root", false, true, true);
@@ -846,12 +993,16 @@ void efficiencyCalculation(){
   //Run(3, "pp/17p/17p_CENT_wSDD_v1_2run.root", false, true, true);
   //Run(16, "pp/17p/17p_CENT_wSDD_v1_2run.root", false, true, true);
   //Run(16, "pp/17p/17p.root", false, true, true);
-
+  //Run(16, "pp/17p/17p_new.root", false, true, true);
+  //Run(16, "pp/17p/17p_282030.root", false, true, true);
+  //Run(3, "pp/17p/17p_3run_sameTrig.root", false, true, true);
+  //Run(16, "pp/17p/17p_3run_sameTrig.root", false, true, true);
+  //Run(16, "pp/17p/17p_282025.root", false, true, true);
 
   //Run(3, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
   //Run(16, "pp/17q/17q_v1_CENTwSDD_noClusCut_3run.root", false, true, true);
   //Run(16, "pp/17q/17q_wSDD.root", false, true, true);
-  Run(16, "pp/17q/17q_CENT_wSDD_3run_forTrig.root", false, true, true);
+  //Run(16, "pp/17q/17q_CENT_wSDD_3run_forTrig_noEThresh.root", false, true, true);
 
 
 
